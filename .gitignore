@@ -1,0 +1,38 @@
+# Build output
+dist/
+
+# Node modules
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (optional)
+.env
+.env.*
+
+# Editor folders
+.vscode/
+.idea/
+
+# MacOS
+.DS_Store
+
+# Prettier / ESLint
+.prettiercache
+.eslintcache
+
+# Optional Husky artifacts
+.husky/_
+
+# Optional test coverage
+coverage/
+
+# Optional debug output
+*.log
+
+# Optional local TS output if you compile in-place
+**/*.js
+**/*.js.map
