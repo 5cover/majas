@@ -17,7 +17,8 @@ export default class IR extends Format {
     }
     parseImpl(input: string): Document {
         const root = JSON.parse(input);
-        if (!validateIRNode(root)) throw this.error(input, 'invalid IRNode structure', validateIRNode.errors);
+        if (!validateIRNode(root))
+            throw this.error(input, 'invalid IRNode structure', validateIRNode.errors);
         return { format: this, root: root as IRNode };
     }
     write(input: Document): string {

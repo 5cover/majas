@@ -1,4 +1,4 @@
-import type { Schema } from "ajv";
+import type { Schema } from 'ajv';
 
 /**
  * A node in the intermediate representation (IR) tree used by majas.
