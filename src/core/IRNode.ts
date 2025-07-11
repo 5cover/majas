@@ -1,3 +1,5 @@
+import type { Schema } from "ajv";
+
 /**
  * A node in the intermediate representation (IR) tree used by majas.
  *
@@ -35,4 +37,33 @@ export default interface IRNode {
      * - `false` for JSON objects, unordered sets, or filesystem folders.
      */
     childrenOrdered: boolean;
+}
+
+export const IRNodeSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+        title: {
+            type: 'string',
+        },
+        content: {
+            type: 'string',
+        },
+        children: {
+            type: 'array',
+            items: {
+                $ref: '#',
+            },
+        },
+        childrenOrdered: {
+            type: 'boolean',
+        },
+    },
+    required: ['children', 'childrenOrdered'],
+} as const satisfies Schema;
+
+export function defineNode(node: Partial<IRNode>): IRNode {
+    node.children ??= [];
+    node.childrenOrdered ??= false;
+    return node as IRNode;
 }

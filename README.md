@@ -40,9 +40,9 @@ npx majas ...
 
 ```ts
 type IRNode = {
-    title?: string; // e.g., heading, key, file/folder name
-    content?: string; // e.g., paragraph text, string value, file content
-    children?: IRNode[]; // nested structure
+  title?: string; // e.g., heading, key, file/folder name
+  content?: string; // e.g., paragraph text, string value, file content
+  children?: IRNode[]; // nested structure
 };
 ```
 

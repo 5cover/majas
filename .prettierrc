@@ -1,9 +1,24 @@
 {
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5",
-    "tabWidth": 4,
-    "printWidth": 100,
-    "bracketSpacing": true,
-    "arrowParens": "avoid"
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "printWidth": 100,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "tabWidth": 2,
+  "bracketSameLine": true,
+  "overrides": [
+    {
+      "files": "**/*.ts",
+      "options": {
+        "parser": "typescript"
+      }
+    },
+    {
+      "files": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.cjs"],
+      "options": {
+        "tabWidth": 4
+      }
+    }
+  ]
 }

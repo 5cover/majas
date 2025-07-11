@@ -1,6 +1,9 @@
 import type Document from '../core/Document.js';
 import Format from '../core/Format.js';
+import { Ajv } from 'ajv';
+import { IRNodeSchema } from '../core/IRNode.js';
 import type IRNode from '../core/IRNode.js';
+const validateIRNode = new Ajv().compile(IRNodeSchema);
 
 interface Options {
     space?: string | number;
@@ -12,8 +15,10 @@ export default class IR extends Format {
     constructor(private readonly options: Options = {}) {
         super();
     }
-    parseImpl(input: string): IRNode {
-        return JSON.parse(input, this.options.parseReviver); // todo: validate contents
+    parseImpl(input: string): Document {
+        const root = JSON.parse(input);
+        if (!validateIRNode(root)) throw this.error(input, 'invalid IRNode structure', validateIRNode.errors);
+        return { format: this, root: root as IRNode };
     }
     write(input: Document): string {
         return JSON.stringify(input.root, null, this.options.space);

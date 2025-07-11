@@ -1,4 +1,3 @@
-import type IRNode from './IRNode.js';
 import type Document from './Document.js';
 import ParseError from './ParseError.js';
 
@@ -8,13 +7,13 @@ export default abstract class Format<Input = string, Output = Input> {
     /**
      * Parse a document into the specified format
      * @param input The input data.
-     * @returns The parsed node.
+     * @returns The parsed document.
      */
-    parse(input: Input): IRNode {
+    parse(input: Input): Document {
         try {
             return this.parseImpl(input);
         } catch (err) {
-            throw err instanceof ParseError ? err : this.error(input, err);
+            throw err instanceof ParseError ? err : this.error(input, undefined, err);
         }
     }
 
@@ -29,14 +28,14 @@ export default abstract class Format<Input = string, Output = Input> {
      * The core parsing logic for this format.
      * Can throw a `ParseError` if known, or any other error for automatic wrapping.
      */
-    protected abstract parseImpl(input: Input): IRNode;
+    protected abstract parseImpl(input: Input): Document;
     /**
      * Create a parse error for this format instance.
      * Use this method to throw parse errors.
      * @param cause The inner errror.
      * @returns A new parse error.
      */
-    protected error(input: Input, cause?: unknown): ParseError {
-        return new ParseError(this, String(input), cause);
+    protected error(input: Input, message?: string, cause?: unknown): ParseError {
+        return new ParseError(this, String(input), message, cause);
     }
 }

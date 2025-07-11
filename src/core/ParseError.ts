@@ -6,10 +6,17 @@ import type Format from './Format.js';
 export default class ParseError extends Error {
     /** The raw input string that caused the parse to fail (may be trimmed) */
     public readonly input: string;
-    constructor(format: Format<unknown>, input: string, cause?: unknown) {
-        const trimmedInput = input.length > 1000 ? input.slice(0, 1000) + '…' : input;
+    constructor(format: Format<unknown>, input: string, message?: string, cause?: unknown) {
         super(
-            `failed to parse ${format.name}: ${cause !== undefined ? cause + ': ' : ''}input: ${trimmedInput}`
+            [
+                `failed to parse ${format.name}`,
+                message !== undefined && message,
+                cause !== undefined && cause !== null && cause,
+                'input',
+                input.length > 1000 ? input.slice(0, 1000) + '…' : input,
+            ]
+                .filter(v => v !== false)
+                .join(':')
         );
         this.name = 'ParseError';
         this.input = input;
