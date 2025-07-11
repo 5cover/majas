@@ -15,7 +15,7 @@ export default class IR extends Format {
     parseImpl(input: string): IRNode {
         return JSON.parse(input, this.options.parseReviver); // todo: validate contents
     }
-    print(input: Document): string {
+    write(input: Document): string {
         return JSON.stringify(input.root, null, this.options.space);
     }
 }

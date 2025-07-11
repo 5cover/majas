@@ -19,11 +19,11 @@ export default abstract class Format<Input = string, Output = Input> {
     }
 
     /**
-     * Pretty-print a document.
+     * Write a document.
      * The precise output format may change depending on configuration and the format of @p input
-     * @param input The document to print
+     * @param input The document to write.
      */
-    abstract print(input: Document): Output;
+    abstract write(input: Document): Output;
 
     /**
      * The core parsing logic for this format.
