@@ -11,17 +11,17 @@ interface Options {
 }
 
 export default class IR extends Format {
-    readonly name = 'IR';
+    override readonly name = 'IR';
     constructor(private readonly options: Options = {}) {
         super();
     }
-    parseImpl(input: string): Document {
+    override parseImpl(input: string): Document {
         const root = JSON.parse(input);
         if (!validateIRNode(root))
             throw this.error(input, 'invalid IRNode structure', validateIRNode.errors);
         return { format: this, root: root as IRNode };
     }
-    write(input: Document): string {
+    override emit(input: Document): string {
         return JSON.stringify(input.root, null, this.options.space);
     }
 }

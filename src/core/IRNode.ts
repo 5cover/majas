@@ -62,7 +62,7 @@ export const IRNodeSchema = {
     required: ['children', 'childrenOrdered'],
 } as const satisfies Schema;
 
-export function defineNode(node: Partial<IRNode>): IRNode {
+export function mkIR(node: Partial<IRNode>): IRNode {
     node.children ??= [];
     node.childrenOrdered ??= false;
     return node as IRNode;

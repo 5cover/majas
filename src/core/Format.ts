@@ -3,7 +3,10 @@ import ParseError from './ParseError.js';
 
 export default abstract class Format<Input = string, Output = Input> {
     abstract readonly name: string;
-
+    /**
+     * File extension. Must be non empty.
+     */
+    readonly fileExtensions?: readonly string[] = [];
     /**
      * Parse a document into the specified format
      * @param input The input data.
@@ -18,11 +21,11 @@ export default abstract class Format<Input = string, Output = Input> {
     }
 
     /**
-     * Write a document.
+     * Emit a document.
      * The precise output format may change depending on configuration and the format of @p input
      * @param input The document to write.
      */
-    abstract write(input: Document): Output;
+    abstract emit(input: Document): Output;
 
     /**
      * The core parsing logic for this format.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import IR from '../../src/formats/IR.js';
-import { defineNode } from '../../src/core/IRNode.js';
+import { mkIR } from '../../src/core/IRNode.js';
 import ParseError from '../../src/core/ParseError.js';
 
 // Nominal
@@ -18,7 +18,7 @@ test('IR parses a minimal JSON tree', () => {
 
     assert.deepEqual(
         doc.root,
-        defineNode({
+        mkIR({
             title: 'root',
         })
     );
@@ -28,12 +28,12 @@ test('IR round-trips cleanly with write + parse', () => {
     const original = {
         title: 'section',
         content: 'hello',
-        children: [defineNode({ title: 'child', content: 'world' })],
+        children: [mkIR({ title: 'child', content: 'world' })],
         childrenOrdered: true,
     };
 
     const ir = new IR();
-    const printed = ir.write({ root: original, format: ir });
+    const printed = ir.emit({ root: original, format: ir });
     const parsed = ir.parse(printed);
 
     assert.deepEqual(parsed.root, original);
