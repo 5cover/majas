@@ -25,6 +25,6 @@
     "lib": ["es2022"]
   },
   // Include the necessary files for your project
-  "include": ["src"],
+  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }
