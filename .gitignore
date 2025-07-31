@@ -33,6 +33,4 @@ coverage/
 # Optional debug output
 *.log
 
-# Optional local TS output if you compile in-place
-**/*.js
 **/*.js.map

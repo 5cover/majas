@@ -28,17 +28,19 @@ export default interface IRNode {
      * - Never undefined. An empty array means the node has no children.
      * - The `$`-titled child is reserved (e.g., for representing XML attributes).
      */
-    children: IRNode[];
+    children?: OrdereableArray;
+}
 
+export interface OrdereableArray {
     /**
      * Indicates whether the order of `children` is semantically meaningful.
      *
      * - `true` for JSON arrays, XML elements, Markdown lists, etc.
      * - `false` for JSON objects, unordered sets, or filesystem folders.
      */
-    childrenOrdered: boolean;
+    ordered: boolean;
+    items: IRNode[];
 }
-
 export const IRNodeSchema = {
     type: 'object',
     additionalProperties: false,
@@ -50,20 +52,29 @@ export const IRNodeSchema = {
             type: 'string',
         },
         children: {
-            type: 'array',
-            items: {
-                $ref: '#',
+            type: 'object',
+            properties: {
+                ordered: {
+                    type: 'boolean'
+                },
+                items: {
+                    type: 'array',
+                    items: {
+                        $ref: '#',
+                    },
+                }
             },
-        },
-        childrenOrdered: {
-            type: 'boolean',
+            required: ['ordered', 'items']
         },
     },
-    required: ['children', 'childrenOrdered'],
 } as const satisfies Schema;
 
-export function mkIR(node: Partial<IRNode>): IRNode {
-    node.children ??= [];
-    node.childrenOrdered ??= false;
+export function mkIR(node: IRNode): IRNode {
+    if (node.children) {
+        for (const c of node.children.items) {
+            mkIR(c);
+        }
+        if (node.children.items.length === 0) delete node.children;
+    }
     return node as IRNode;
 }

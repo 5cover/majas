@@ -1,16 +1,14 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import IR from '../../src/formats/IR.js';
-import { mkIR } from '../../src/core/IRNode.js';
+import IRNode, { mkIR } from '../../src/core/IRNode.js';
 import ParseError from '../../src/core/ParseError.js';
 
 // Nominal
 
 test('IR parses a minimal JSON tree', () => {
     const json = `{
-    "title": "root",
-    "children": [],
-    "childrenOrdered": false
+    "title": "root"
   }`;
 
     const ir = new IR();
@@ -25,11 +23,10 @@ test('IR parses a minimal JSON tree', () => {
 });
 
 test('IR round-trips cleanly with write + parse', () => {
-    const original = {
+    const original: IRNode = {
         title: 'section',
         content: 'hello',
-        children: [mkIR({ title: 'child', content: 'world' })],
-        childrenOrdered: true,
+        children: { ordered: true, items: [mkIR({ title: 'child', content: 'world' })]},
     };
 
     const ir = new IR();
@@ -51,7 +48,10 @@ test('IR throws ParseError on invalid JSON syntax', () => {
 test('IR throws ParseError on invalid IR shape', () => {
     const ir = new IR();
     const input = JSON.stringify({
-        title: 'missing children and childrenOrdered',
+        title: 'missing children ordered',
+        children: {
+            items: []
+        }
     });
 
     assert.throws(() => ir.parse(input), ParseError);
