@@ -3,7 +3,7 @@
 > Markdown and JSON Are Similar.
 > Because all data is hierarchical if you look at it long enough.
 
-**majas** is a format-agnostic structure converter. It lets you translate between hierarchical formats like Markdown, JSON, and directory trees — not by trying to preserve syntax, but by capturing the **underlying shape**.
+**majas** is a format-agnostic structured data converter. It lets you translate between hierarchical formats like Markdown, JSON, and directory trees — not by trying to preserve syntax, but by capturing the **underlying shape**.
 
 Whether you're trying to break up a massive Markdown doc, reverse-engineer a messy JSON export, or treat your filesystem like a structured document — **majas** gives you tools to traverse, transform, and rematerialize **hierarchical data**.
 

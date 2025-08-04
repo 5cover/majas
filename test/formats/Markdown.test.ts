@@ -1,7 +1,7 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import Markdown from '../../src/formats/Markdown.js';
-import IRNode, { mkIR, OrdereableArray } from '../../src/core/IRNode.js';
+import IRNode, { OrdereableArray } from '../../src/core/IRNode.js';
 
 // Nominal
 

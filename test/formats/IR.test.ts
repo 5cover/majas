@@ -26,7 +26,7 @@ test('IR round-trips cleanly with write + parse', () => {
     const original: IRNode = {
         title: 'section',
         content: 'hello',
-        children: { ordered: true, items: [mkIR({ title: 'child', content: 'world' })]},
+        children: { ordered: true, items: [mkIR({ title: 'child', content: 'world' })] },
     };
 
     const ir = new IR();
@@ -50,8 +50,8 @@ test('IR throws ParseError on invalid IR shape', () => {
     const input = JSON.stringify({
         title: 'missing children ordered',
         children: {
-            items: []
-        }
+            items: [],
+        },
     });
 
     assert.throws(() => ir.parse(input), ParseError);

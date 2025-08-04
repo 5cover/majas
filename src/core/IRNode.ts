@@ -55,16 +55,16 @@ export const IRNodeSchema = {
             type: 'object',
             properties: {
                 ordered: {
-                    type: 'boolean'
+                    type: 'boolean',
                 },
                 items: {
                     type: 'array',
                     items: {
                         $ref: '#',
                     },
-                }
+                },
             },
-            required: ['ordered', 'items']
+            required: ['ordered', 'items'],
         },
     },
 } as const satisfies Schema;

@@ -1,40 +1,27 @@
 import type * as md from 'mdast';
 import type IRNode from '../core/IRNode.js';
-import Format from '../core/Format.js';
 import type Document from '../core/Document.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { throwf } from '../util/misc.js';
 import { mkIR } from '../core/IRNode.js';
+import { FormatterBase } from '../core/Formatter.js';
 
-export default class Markdown extends Format {
-    override readonly name = 'Markdown';
-    override readonly fileExtensions = [
-        'md',
-        'markdown',
-        'mdown',
-        'mkdn',
-        'mkd',
-        'mdwn',
-        'mkdown',
-        'ron',
-    ] as const;
+export default class Markdown extends FormatterBase<string> {
     private input!: string;
-    private root!: md.Root;
-    protected override parseImpl(input: string): Document {
+    protected override parseImpl(input: string): IRNode {
         this.input = input;
-        this.root = fromMarkdown(input);
-        const root = this.md2ir(this.root);
-        return { format: this, root };
+        const root = fromMarkdown(input);
+        return this.md2ir(root);
     }
-    override emit(input: Document): string {
-        return '';
+    override emit(output: Document): string {
+        return 'todo';
     }
 
     private md2ir(parent: md.Parent): IRNode {
         // initialized to a H0 (node englobing the whole document)
         const h0children: IRNode[] = [];
         const h0: IRNode = {
-            children: {ordered: true, items: h0children },
+            children: { ordered: true, items: h0children },
         };
         const stack = [h0children];
         let lastHeading = h0;
@@ -42,7 +29,12 @@ export default class Markdown extends Format {
         let previousHeadingLevel: md.Heading['depth'] | 0 = 0;
         for (const md of parent.children) {
             if (!isHeading(md)) continue;
-            const content = this.input.substring(previousHeadingEndOffset, md.position?.start.offset ?? throwf(new Error('missing node start offset'))).trim();
+            const content = this.input
+                .substring(
+                    previousHeadingEndOffset,
+                    md.position?.start.offset ?? throwf(new Error('missing node start offset'))
+                )
+                .trim();
             if (content) lastHeading.content = content;
 
             stack[stack.length - 1].at(-1)!;
@@ -51,18 +43,20 @@ export default class Markdown extends Format {
                 stack.pop();
             }
             const newScope: IRNode[] = [];
-            stack[stack.length - 1].push(lastHeading = {
-                // Get raw child source
-                title: this.getSource(md.children),
-                children: { ordered: true, items: newScope },
-            });
+            stack[stack.length - 1].push(
+                (lastHeading = {
+                    // Get raw child source
+                    title: this.getSource(md.children),
+                    children: { ordered: true, items: newScope },
+                })
+            );
             if (previousHeadingLevel <= md.depth) {
                 // Child
                 stack.push(newScope);
             }
             previousHeadingLevel = md.depth;
-            previousHeadingEndOffset = md.position?.end.offset ?? throwf(new Error('missing node end offset'));
-
+            previousHeadingEndOffset =
+                md.position?.end.offset ?? throwf(new Error('missing node end offset'));
         }
 
         const trailingContent = this.input.substring(previousHeadingEndOffset).trim();
@@ -71,16 +65,15 @@ export default class Markdown extends Format {
             lastHeading!.content = (lastHeading!.content ?? '') + trailingContent;
         }
         return mkIR(h0);
-
     }
 
     private getSource(nodes: readonly md.Node[]) {
         const l = nodes.length;
         return l
             ? this.input.substring(
-                nodes[0].position?.start.offset ?? throwf(new Error('missing node start offset')),
-                nodes[l - 1].position?.end.offset ?? throwf(new Error('missing node end offset'))
-            )
+                  nodes[0].position?.start.offset ?? throwf(new Error('missing node start offset')),
+                  nodes[l - 1].position?.end.offset ?? throwf(new Error('missing node end offset'))
+              )
             : undefined;
     }
 }
@@ -88,4 +81,3 @@ export default class Markdown extends Format {
 function isHeading(node: md.Node): node is md.Heading {
     return node.type === 'heading';
 }
-

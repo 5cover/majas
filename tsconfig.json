@@ -12,6 +12,7 @@
     "removeComments": true,
     // Enable strict type checking so you can catch bugs early
     "strict": true,
+    "alwaysStrict": true,
     "noImplicitOverride": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
@@ -22,6 +23,7 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
+    "noStrictGenericChecks": false,
     // Transpile our TypeScript code to JavaScript
     "module": "NodeNext",
     "outDir": "dist",
