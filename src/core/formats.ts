@@ -119,8 +119,8 @@ export default [
                 },
                 emit(output) {
                     const tree = fsFormatter.emit(output);
-                    fstree.write(tree.children, o.dir);
-                    return tree.title;
+                    fstree.write(tree, o.dir);
+                    return o.dir;
                 },
             };
         },

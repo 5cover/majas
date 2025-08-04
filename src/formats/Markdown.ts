@@ -3,7 +3,6 @@ import type IRNode from '../core/IRNode.js';
 import type Document from '../core/Document.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { throwf } from '../util/misc.js';
-import { mkIR } from '../core/IRNode.js';
 import { FormatterBase } from '../core/Formatter.js';
 
 export default class Markdown extends FormatterBase<string> {
@@ -37,7 +36,6 @@ export default class Markdown extends FormatterBase<string> {
                 .trim();
             if (content) lastHeading.content = content;
 
-            stack[stack.length - 1].at(-1)!;
             if (previousHeadingLevel >= md.depth) {
                 // Parent
                 stack.pop();
@@ -64,17 +62,17 @@ export default class Markdown extends FormatterBase<string> {
         if (trailingContent) {
             lastHeading!.content = (lastHeading!.content ?? '') + trailingContent;
         }
-        return mkIR(h0);
+        return h0;
     }
 
-    private getSource(nodes: readonly md.Node[]) {
+    private getSource(nodes: readonly md.Node[]): string {
         const l = nodes.length;
         return l
             ? this.input.substring(
                   nodes[0].position?.start.offset ?? throwf(new Error('missing node start offset')),
                   nodes[l - 1].position?.end.offset ?? throwf(new Error('missing node end offset'))
               )
-            : undefined;
+            : '';
     }
 }
 

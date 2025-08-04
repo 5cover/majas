@@ -1,9 +1,9 @@
 import { describe, it } from 'node:test';
-import * as assert from 'node:assert/strict';
 import Markdown from '../../src/formats/Markdown.js';
 import formats from '../../src/core/formats.js';
 import type IRNode from '../../src/core/IRNode.js';
-import type { OrdereableArray } from '../../src/core/IRNode.js';
+import type { OrderableArray } from '../../src/core/IRNode.js';
+import { assertEqualsIR } from '../testing.js';
 
 // Nominal
 
@@ -18,12 +18,12 @@ test`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             children: children({
                 title: 'H1',
                 content: 'test',
             }),
-        } satisfies IRNode);
+        });
     });
 
     it('parses h2 document', () => {
@@ -35,7 +35,7 @@ hope`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             children: children({
                 title: 'H1',
                 children: children({
@@ -43,7 +43,7 @@ hope`;
                     content: 'hope',
                 }),
             }),
-        } satisfies IRNode);
+        });
     });
 
     it('parses h1 & h2 document', () => {
@@ -57,7 +57,7 @@ hope`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             children: children({
                 title: 'H1',
                 content: 'test',
@@ -66,7 +66,7 @@ hope`;
                     content: 'hope',
                 }),
             }),
-        } satisfies IRNode);
+        });
     });
 
     it('parses no title document', () => {
@@ -74,9 +74,9 @@ hope`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             content: input,
-        } satisfies IRNode);
+        });
     });
 
     it('parses empty document', () => {
@@ -84,7 +84,45 @@ hope`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {} satisfies IRNode);
+        assertEqualsIR(doc.root, {});
+    });
+
+    it('parses anonymous h1', () => {
+        const input = `# `;
+
+        const doc = markdown.parse(input);
+
+        assertEqualsIR(doc.root, {
+            children: children({
+                title: '',
+            }),
+        });
+    });
+
+    it('parses empty headings', () => {
+        const input = `# stuff
+## A
+## B
+## C`;
+
+        const doc = markdown.parse(input);
+
+        assertEqualsIR(doc.root, {
+            children: children({
+                title: 'stuff',
+                children: children(
+                    {
+                        title: 'A',
+                    },
+                    {
+                        title: 'B',
+                    },
+                    {
+                        title: 'C',
+                    }
+                ),
+            }),
+        });
     });
 
     it('parses h1 after content', () => {
@@ -94,12 +132,12 @@ hope`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             content: 'test',
             children: children({
                 title: 'H1',
             }),
-        } satisfies IRNode);
+        });
     });
 
     it('parses h1 brothers', () => {
@@ -114,7 +152,7 @@ luigi`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             children: children(
                 {
                     title: 'Mario',
@@ -125,7 +163,7 @@ luigi`;
                     content: 'luigi',
                 }
             ),
-        } satisfies IRNode);
+        });
     });
 
     it('parses h0-6', () => {
@@ -158,7 +196,7 @@ h6 content`;
 
         const doc = markdown.parse(input);
 
-        assert.deepEqual(doc.root, {
+        assertEqualsIR(doc.root, {
             content: 'h0 content',
             children: children({
                 title: 'h1 heading',
@@ -184,11 +222,11 @@ h6 content`;
                     }),
                 }),
             }),
-        } satisfies IRNode);
+        });
     });
 });
 
-function children(...nodes: IRNode[]): OrdereableArray | undefined {
+function children(...nodes: IRNode[]): OrderableArray | undefined {
     return nodes.length
         ? {
               ordered: true,

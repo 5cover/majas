@@ -2,9 +2,9 @@ import { describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
 import ParseError from '../../src/core/ParseError.js';
 import formats from '../../src/core/formats.js';
-import { mkIR } from '../../src/core/IRNode.js';
 import type IRNode from '../../src/core/IRNode.js';
 import IR from '../../src/formats/IR.js';
+import { assertEqualsIR } from '../testing.js';
 
 // Nominal
 
@@ -18,25 +18,22 @@ describe('IR formatter', () => {
 
         const doc = ir.parse(json);
 
-        assert.deepEqual(
-            doc.root,
-            mkIR({
-                title: 'root',
-            })
-        );
+        assertEqualsIR(doc.root, {
+            title: 'root',
+        });
     });
 
     it('round-trips cleanly with write + parse', () => {
         const original: IRNode = {
             title: 'section',
             content: 'hello',
-            children: { ordered: true, items: [mkIR({ title: 'child', content: 'world' })] },
+            children: { ordered: true, items: [{ title: 'child', content: 'world' }] },
         };
 
         const printed = ir.emit({ root: original, format: irFormat });
         const parsed = ir.parse(printed);
 
-        assert.deepEqual(parsed.root, original);
+        assertEqualsIR(parsed.root, original);
     });
 
     // Error
