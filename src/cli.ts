@@ -87,6 +87,10 @@ function parseArgs(args: readonly string[]) {
     let i = 0;
     for (const arg of args) {
         i++;
+        if (processOptions && arg == '--') {
+            processOptions = false;
+            continue;
+        }
         if (
             processOptions &&
             (detectPrefix(arg, inputOptions, '-i') ||

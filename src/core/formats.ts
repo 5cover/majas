@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import FilesystemFormatter from '../formats/Filesystem.js';
 import IRFormatter from '../formats/IR.js';
 import MarkdownFormatter from '../formats/Markdown.js';

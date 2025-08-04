@@ -1,16 +1,20 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import Markdown from '../../src/formats/Markdown.js';
-import IRNode, { OrdereableArray } from '../../src/core/IRNode.js';
+import formats from '../../src/core/formats.js';
+import type IRNode from '../../src/core/IRNode.js';
+import type { OrdereableArray } from '../../src/core/IRNode.js';
 
 // Nominal
+
+const markdownFormat = formats[1];
+const markdown = new Markdown(markdownFormat);
 
 test('Markdown parses basic document', () => {
     const input = `# H1
 
 test`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -28,7 +32,6 @@ test('Markdown parses h2 document', () => {
 
 hope`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -51,7 +54,6 @@ test
 
 hope`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -69,7 +71,6 @@ hope`;
 test('Markdown no title document', () => {
     const input = `just some random text`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -80,7 +81,6 @@ test('Markdown no title document', () => {
 test('Markdown empty document', () => {
     const input = ``;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {} satisfies IRNode);
@@ -91,7 +91,6 @@ test('Markdown title after content', () => {
     
 # H1`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -112,7 +111,6 @@ mario
 
 luigi`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {
@@ -157,7 +155,6 @@ h5 content
 
 h6 content`;
 
-    const markdown = new Markdown();
     const doc = markdown.parse(input);
 
     assert.deepEqual(doc.root, {

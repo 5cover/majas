@@ -1,17 +1,22 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
-import IR from '../../src/formats/IR.js';
-import IRNode, { mkIR } from '../../src/core/IRNode.js';
 import ParseError from '../../src/core/ParseError.js';
+import formats from '../../src/core/formats.js'
+import { mkIR } from '../../src/core/IRNode.js';
+import type IRNode from '../../src/core/IRNode.js';
+import IR from '../../src/formats/IR.js';
 
 // Nominal
+
+const irFormat = formats[0];
+const ir = new IR(irFormat);
 
 test('IR parses a minimal JSON tree', () => {
     const json = `{
     "title": "root"
   }`;
 
-    const ir = new IR();
+    
     const doc = ir.parse(json);
 
     assert.deepEqual(
@@ -29,8 +34,7 @@ test('IR round-trips cleanly with write + parse', () => {
         children: { ordered: true, items: [mkIR({ title: 'child', content: 'world' })] },
     };
 
-    const ir = new IR();
-    const printed = ir.emit({ root: original, format: ir });
+    const printed = ir.emit({ root: original, format: irFormat });
     const parsed = ir.parse(printed);
 
     assert.deepEqual(parsed.root, original);
@@ -39,14 +43,12 @@ test('IR round-trips cleanly with write + parse', () => {
 // Error
 
 test('IR throws ParseError on invalid JSON syntax', () => {
-    const ir = new IR();
     const input = `{ title: "no quotes" }`; // malformed JSON
 
     assert.throws(() => ir.parse(input), ParseError);
 });
 
 test('IR throws ParseError on invalid IR shape', () => {
-    const ir = new IR();
     const input = JSON.stringify({
         title: 'missing children ordered',
         children: {
