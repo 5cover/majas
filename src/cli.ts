@@ -5,6 +5,8 @@ import { stdin, stdout } from 'process';
 import { createWriteStream } from 'fs';
 import type { Format, Options } from './core/Format.js';
 import formats from './core/formats.js';
+import { map } from './util/misc.js';
+import * as p from 'path';
 
 const program = baseProgram
     .name('majas')
@@ -40,7 +42,7 @@ const args = parseArgs(program.args);
 
 const sourceFormat = ((): Format => {
     if (o.infer) {
-        const inferred = inferFormat(args.inputFile);
+        const inferred = map(inferFormat, args.inputFile);
         if (inferred) return inferred;
         if (o.from !== undefined) {
             console.log('fallback to --from');
@@ -60,7 +62,13 @@ if (o.to === undefined) {
     output.write(result);
 }
 
-function inferFormat(file: string | undefined): Format | undefined {
+function inferFormat(path: string): Format | undefined {
+    const ext = p.extname(path).slice(1);
+    for (const format of formats) {
+        if ((format.fileExtensions as string[]).includes(ext)) {
+            return format;
+        }
+    }
     return undefined;
 }
 

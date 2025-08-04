@@ -20,7 +20,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode> {
         }
 
         return mkIR({
-            title: undefined, // directory itself may have no title or could infer
+            title: input.title,
             children: {
                 ordered: false,
                 items: Array.from(input.children, ([name, child]) =>
@@ -36,15 +36,16 @@ export default class Filesystem extends FormatterBase<FSTreeNode> {
         return { title: output.root.title ?? 'out', children };
 
         function walk(parent: Map<string, FSTree>, node: IRNode, index: number) {
+            const filename = node.title ?? index.toString();
             if (node.content !== undefined) {
                 const contentFilename = uniqify(
-                    node.title + (output.format.fileExtensions[0] ?? output.format.displayName),
-                    parent.has
+                    `${filename}.${output.format.fileExtensions[0] ?? 'txt'}`,
+                    s => parent.has(s)
                 );
                 parent.set(contentFilename, node.content);
             }
             if (node.children !== undefined) {
-                const childrenDirname = uniqify(node.title ?? index.toString(), parent.has);
+                const childrenDirname = uniqify(filename, s => parent.has(s));
                 const children = new Map<string, FSTree>();
                 parent.set(childrenDirname, children);
                 node.children.items.forEach((n, i) => walk(children, n, i));

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import { describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
 import Markdown from '../../src/formats/Markdown.js';
 import formats from '../../src/core/formats.js';
@@ -10,43 +10,44 @@ import type { OrdereableArray } from '../../src/core/IRNode.js';
 const markdownFormat = formats[1];
 const markdown = new Markdown(markdownFormat);
 
-test('Markdown parses basic document', () => {
-    const input = `# H1
+describe('Markdown formatter', () => {
+    it('parses basic document', () => {
+        const input = `# H1
 
 test`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        children: children({
-            title: 'H1',
-            content: 'test',
-        }),
-    } satisfies IRNode);
-});
+        assert.deepEqual(doc.root, {
+            children: children({
+                title: 'H1',
+                content: 'test',
+            }),
+        } satisfies IRNode);
+    });
 
-test('Markdown parses h2 document', () => {
-    const input = `# H1
+    it('parses h2 document', () => {
+        const input = `# H1
 
 ## H2
 
 hope`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        children: children({
-            title: 'H1',
+        assert.deepEqual(doc.root, {
             children: children({
-                title: 'H2',
-                content: 'hope',
+                title: 'H1',
+                children: children({
+                    title: 'H2',
+                    content: 'hope',
+                }),
             }),
-        }),
-    } satisfies IRNode);
-});
+        } satisfies IRNode);
+    });
 
-test('Markdown parses h1 & h2 document', () => {
-    const input = `# H1
+    it('parses h1 & h2 document', () => {
+        const input = `# H1
 
 test
 
@@ -54,55 +55,55 @@ test
 
 hope`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        children: children({
-            title: 'H1',
-            content: 'test',
+        assert.deepEqual(doc.root, {
             children: children({
-                title: 'H2',
-                content: 'hope',
+                title: 'H1',
+                content: 'test',
+                children: children({
+                    title: 'H2',
+                    content: 'hope',
+                }),
             }),
-        }),
-    } satisfies IRNode);
-});
+        } satisfies IRNode);
+    });
 
-test('Markdown no title document', () => {
-    const input = `just some random text`;
+    it('parses no title document', () => {
+        const input = `just some random text`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        content: input,
-    } satisfies IRNode);
-});
+        assert.deepEqual(doc.root, {
+            content: input,
+        } satisfies IRNode);
+    });
 
-test('Markdown empty document', () => {
-    const input = ``;
+    it('parses empty document', () => {
+        const input = ``;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {} satisfies IRNode);
-});
+        assert.deepEqual(doc.root, {} satisfies IRNode);
+    });
 
-test('Markdown title after content', () => {
-    const input = `test
+    it('parses h1 after content', () => {
+        const input = `test
     
 # H1`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        content: 'test',
-        children: children({
-            title: 'H1',
-        }),
-    } satisfies IRNode);
-});
+        assert.deepEqual(doc.root, {
+            content: 'test',
+            children: children({
+                title: 'H1',
+            }),
+        } satisfies IRNode);
+    });
 
-test('Markdown brothers', () => {
-    const input = `
+    it('parses h1 brothers', () => {
+        const input = `
 # Mario
 
 mario
@@ -111,24 +112,24 @@ mario
 
 luigi`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        children: children(
-            {
-                title: 'Mario',
-                content: 'mario',
-            },
-            {
-                title: 'Luigi',
-                content: 'luigi',
-            }
-        ),
-    } satisfies IRNode);
-});
+        assert.deepEqual(doc.root, {
+            children: children(
+                {
+                    title: 'Mario',
+                    content: 'mario',
+                },
+                {
+                    title: 'Luigi',
+                    content: 'luigi',
+                }
+            ),
+        } satisfies IRNode);
+    });
 
-test('Markdown All 6', () => {
-    const input = `
+    it('parses h0-6', () => {
+        const input = `
 h0 content
 
 # h1 heading
@@ -155,35 +156,36 @@ h5 content
 
 h6 content`;
 
-    const doc = markdown.parse(input);
+        const doc = markdown.parse(input);
 
-    assert.deepEqual(doc.root, {
-        content: 'h0 content',
-        children: children({
-            title: 'h1 heading',
-            content: 'h1 content',
+        assert.deepEqual(doc.root, {
+            content: 'h0 content',
             children: children({
-                title: 'h2 heading',
-                content: 'h2 content',
+                title: 'h1 heading',
+                content: 'h1 content',
                 children: children({
-                    title: 'h3 heading',
-                    content: 'h3 content',
+                    title: 'h2 heading',
+                    content: 'h2 content',
                     children: children({
-                        title: 'h4 heading',
-                        content: 'h4 content',
+                        title: 'h3 heading',
+                        content: 'h3 content',
                         children: children({
-                            title: 'h5 heading',
-                            content: 'h5 content',
+                            title: 'h4 heading',
+                            content: 'h4 content',
                             children: children({
-                                title: 'h6 heading',
-                                content: 'h6 content',
+                                title: 'h5 heading',
+                                content: 'h5 content',
+                                children: children({
+                                    title: 'h6 heading',
+                                    content: 'h6 content',
+                                }),
                             }),
                         }),
                     }),
                 }),
             }),
-        }),
-    } satisfies IRNode);
+        } satisfies IRNode);
+    });
 });
 
 function children(...nodes: IRNode[]): OrdereableArray | undefined {
