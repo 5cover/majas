@@ -32,7 +32,28 @@ const o = program.opts();
 
 if (o.help !== undefined) {
     if (typeof o.help === 'string') {
-        program.addHelpText('after', `\nHELP FOR FORMAT '${o.help}'`);
+        const format = findFormat(o.help);
+        const options =
+            format.optionsSchema === undefined
+                ? '(no options)'
+                : Object.entries(format.optionsSchema)
+                      .map(([option, schema]) => {
+                          const desc =
+                              typeof schema === 'object' &&
+                              schema.description +
+                                  (schema.default
+                                      ? ` (default value: ${String(schema.default)})`
+                                      : '');
+                          return desc ? `${option} -- ${desc}` : option;
+                      })
+                      .join('\n');
+        program.addHelpText(
+            'after',
+            `
+HELP FOR FORMAT '${o.help}'
+
+${options}`
+        );
     }
     program.help();
 }

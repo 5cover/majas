@@ -71,6 +71,6 @@ export abstract class FormatterBase<Input, Output = Input> implements Formatter<
      * @returns A new parse error.
      */
     protected error(input: unknown, message?: string, cause?: unknown): ParseError {
-        return new ParseError(this, String(input), message, cause);
+        return new ParseError(this.format, String(input), message, cause);
     }
 }

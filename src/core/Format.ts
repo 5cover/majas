@@ -3,7 +3,7 @@ import type { Formatter, Raw } from './Formatter.js';
 
 export type Options = Partial<Record<string, string | true>>;
 
-export type OptionsSchema = Exclude<JSONSchema, boolean>['properties'];
+export type OptionsSchema = Record<string, JSONSchema>;
 
 export interface Format {
     displayName: string;

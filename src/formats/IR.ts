@@ -1,7 +1,7 @@
 import type Document from '../core/Document.js';
 import { type Format } from '../core/Format.js';
 import { Ajv } from 'ajv';
-import { IRNodeSchema } from '../core/IRNode.js';
+import { IRNodeSchema, normalize } from '../core/IRNode.js';
 import type IRNode from '../core/IRNode.js';
 import { FormatterBase } from '../core/Formatter.js';
 
@@ -22,6 +22,6 @@ export default class IR extends FormatterBase<string> {
         return root as IRNode;
     }
     override emit(output: Document): string {
-        return JSON.stringify(output.root, null, this.space);
+        return JSON.stringify(normalize(output.root), null, this.space);
     }
 }
