@@ -50,6 +50,7 @@ export function preprocessOptionsArgs(args: readonly string[]) {
     function detectPrefix(arg: string, bag: Options, prefix: string) {
         return (
             arg.startsWith(prefix) &&
+            arg.length > prefix.length &&
             ((option.bag = bag)[(option.key = arg.slice(prefix.length))] = true)
         );
     }

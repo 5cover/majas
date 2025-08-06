@@ -24,6 +24,20 @@ describe('preprocessOptionsArgs', () => {
         assert.deepEqual(result.args, []);
     });
 
+    it('should ignore bare prefixes', () => {
+        const result = preprocessOptionsArgs(['-i', '-o', '--in-', '--out-']);
+        assert.deepEqual(result.input, {});
+        assert.deepEqual(result.output, {});
+        assert.deepEqual(result.args, ['-i', '-o', '--in-', '--out-']);
+    });
+
+    it('should treat all options', () => {
+        const result = preprocessOptionsArgs(['-i1', '-o1', '--in-2', '--out-2']);
+        assert.deepEqual(result.input, { '1': true, '2': true });
+        assert.deepEqual(result.output, { '1': true, '2': true });
+        assert.deepEqual(result.args, []);
+    });
+
     it('should extract --out- options and remove them from args', () => {
         const result = preprocessOptionsArgs(['--out-type', 'json']);
         assert.deepEqual(result.output, { type: 'json' });

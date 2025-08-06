@@ -33,7 +33,7 @@ describe('Filesystem formatter', () => {
                 format: testFormat,
                 root: {},
             }),
-            new Map([['out', new Map()]])
+            new Map([['.', new Map()]])
         );
     });
     it('emits a named empty node', () => {
@@ -81,7 +81,7 @@ describe('Filesystem formatter', () => {
                     },
                 },
             }),
-            new Map([['out', new Map()]])
+            new Map([['.', new Map()]])
         );
     });
     it('emits an empty named directory', () => {
@@ -115,7 +115,7 @@ describe('Filesystem formatter', () => {
                     },
                 },
             }),
-            new Map([[`out`, new Map([[`file.${testFormat.fileExtensions[0]}`, 'hello']])]])
+            new Map([[`.`, new Map([[`file.${testFormat.fileExtensions[0]}`, 'hello']])]])
         );
     });
     it('emits a directory of unnamed files', () => {
@@ -141,7 +141,7 @@ describe('Filesystem formatter', () => {
             }),
             new Map([
                 [
-                    `out`,
+                    `.`,
                     new Map([
                         [`0.${testFormat.fileExtensions[0]}`, 'hello0'],
                         [`1.${testFormat.fileExtensions[0]}`, 'hello1'],
@@ -169,8 +169,20 @@ describe('Filesystem formatter', () => {
             }),
             new Map<string, FSTree>([
                 [`out.${testFormat.fileExtensions[0]}`, 'contentfulness'],
-                ['out', new Map([[`0.${testFormat.fileExtensions[0]}`, 'childrenity']])],
+                ['.', new Map([[`0.${testFormat.fileExtensions[0]}`, 'childrenity']])],
             ])
+        );
+    });
+
+    it('emits a named empty node with illegal filename characters', () => {
+        assert.deepEqual(
+            formatter.emit({
+                format: testFormat,
+                root: {
+                    title: 'em/pty',
+                },
+            }),
+            new Map([['empty', new Map()]])
         );
     });
 });
