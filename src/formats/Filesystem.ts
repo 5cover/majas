@@ -35,7 +35,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
         return children;
 
         function walk(parent: Map<string, FSTree>, node: IRNode, index: number) {
-            const filename = node.title ?? (isNaN(index) ? 'out' : index.toString());
+            const filename = node.title ?? (isNaN(index) ? '.' : index.toString());
             if (node.content !== undefined) {
                 const contentFilename = uniqify(
                     `${filename}.${output.format.fileExtensions[0] ?? 'txt'}`,

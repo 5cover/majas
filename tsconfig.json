@@ -17,7 +17,6 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "allowJs": false,
     "noFallthroughCasesInSwitch": true,
     "strictBindCallApply": true,
     "strictBuiltinIteratorReturn": true,
@@ -25,12 +24,11 @@
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
     "noStrictGenericChecks": false,
+    "noEmit": true,
+    "allowJs": true,
     // Transpile our TypeScript code to JavaScript
     "module": "NodeNext",
-    "outDir": "dist",
     "lib": ["es2022"]
   },
-  // Include the necessary files for your project
-  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

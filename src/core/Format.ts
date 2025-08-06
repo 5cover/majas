@@ -1,5 +1,6 @@
 import type { JSONSchema } from 'json-schema-to-ts';
-import type { Formatter, Raw } from './Formatter.js';
+import type { Raw } from './Formatter.js';
+import type Document from './Document.js';
 
 export type Options = Partial<Record<string, string | true>>;
 
@@ -12,7 +13,11 @@ export interface Format {
     /** Maps from options to their description/format, etc. to display in help output. */
     optionsSchema: OptionsSchema;
     accepts: string;
-    sideEffects?: string;
     emits: string;
-    create(options: Readonly<Options>): Formatter<Raw, Raw>;
+    create(options: Readonly<Options>): Pipeline;
+}
+
+interface Pipeline {
+    parse(input: Raw): Document;
+    emit(output: Document, location: string | undefined): void;
 }

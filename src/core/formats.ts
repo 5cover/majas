@@ -4,11 +4,14 @@ import MarkdownFormatter from '../formats/Markdown.js';
 import { type Format, type OptionsSchema } from './Format.js';
 import { Ajv } from 'ajv';
 import { wrapValidatorAsTypeGuard } from 'json-schema-to-ts';
-import { decodeRawInput } from './Formatter.js';
+import { decodeRawInput, type Raw } from './Formatter.js';
 import * as fstree from '../fstree.js';
-import * as p from 'path';
+import { stdout } from 'process';
+import { createWriteStream } from 'fs';
 
-const ajv = new Ajv();
+const ajv = new Ajv({
+    useDefaults: true,
+});
 const validate = wrapValidatorAsTypeGuard((schema, data) => ajv.validate(schema, data));
 
 const encoding = {
@@ -49,11 +52,6 @@ const optionSchemas = {
     },
     fs: {
         encoding,
-        dir: {
-            type: 'string',
-            description: 'The directory to create the subtree in',
-            default: '.',
-        },
     },
 } as const;
 
@@ -67,13 +65,17 @@ export default [
         emits: 'IRNode JSON',
         create(options) {
             const o = parseOptions(options, optionSchemas.ir);
+            if (typeof o.space === 'string') {
+                const spaceN = parseInt(o.space);
+                if (spaceN >= 0) o.space = spaceN;
+            }
             const irFormatter = new IRFormatter(this, o.space);
             return {
                 parse(input) {
                     return irFormatter.parse(decodeRawInput(input, o.encoding));
                 },
-                emit(output) {
-                    return irFormatter.emit(output);
+                emit(output, location) {
+                    textEmit(location, irFormatter.emit(output));
                 },
             };
         },
@@ -92,8 +94,8 @@ export default [
                 parse(input) {
                     return mdFormatter.parse(decodeRawInput(input, o.encoding));
                 },
-                emit(output) {
-                    return mdFormatter.emit(output);
+                emit(output, location) {
+                    textEmit(location, mdFormatter.emit(output));
                 },
             };
         },
@@ -104,8 +106,7 @@ export default [
         fileExtensions: [],
         optionsSchema: optionSchemas.fs,
         accepts: 'a filesystem path',
-        sideEffects: 'creates of a filesystem subtree',
-        emits: 'the path of the created file or directory',
+        emits: 'a filesystem subtree at the output location or the current directory if unspecified.',
         create(options) {
             const o = parseOptions(options, optionSchemas.fs);
             const fsFormatter = new FilesystemFormatter(this);
@@ -114,18 +115,21 @@ export default [
                     const title = decodeRawInput(input, o.encoding, x => x);
                     return fsFormatter.parse({
                         title,
-                        children: fstree.read(p.resolve(o.dir, title), o.encoding),
+                        children: fstree.read(title, o.encoding),
                     });
                 },
-                emit(output) {
-                    const tree = fsFormatter.emit(output);
-                    fstree.write(tree, o.dir);
-                    return o.dir;
+                emit(output, location) {
+                    fstree.write(fsFormatter.emit(output), location ?? '.');
                 },
             };
         },
     },
 ] as const satisfies Format[];
+
+function textEmit(location: string | undefined, output: Raw) {
+    const f = location === undefined ? stdout : createWriteStream(location);
+    f.write(output);
+}
 
 function parseOptions<Schema extends OptionsSchema>(options: unknown, schema: Schema) {
     if (

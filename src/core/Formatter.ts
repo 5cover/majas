@@ -10,7 +10,6 @@ export interface Formatter<Input, Output = Input> {
     // In TypeScript, method parameters are bivariant by default — even in strict mode — which allows unsound assignments.
     // Writing the method as a function type ensures contravariant behavior when `strictFunctionTypes` is enabled,
     // preventing accidental misuse like passing incompatible types to a generic consumer.
-
     parse: (input: Input) => Document;
     emit: (output: Document) => Output;
 }

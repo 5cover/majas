@@ -1,13 +1,12 @@
 // CLI interface entry
 import { program as baseProgram } from '@commander-js/extra-typings';
 import pkg from '../package.json' with { type: 'json' };
-import { stdin, stdout } from 'process';
-import { createWriteStream } from 'fs';
-import type { Format, Options } from './core/Format.js';
+import type { Format } from './core/Format.js';
 import formats from './core/formats.js';
-import { map } from './util/misc.js';
+import { map, preprocessOptionsArgs, readFromStdin } from './util/misc.js';
 import * as p from 'path';
 
+const formatOptions = preprocessOptionsArgs(process.argv.slice(2));
 const program = baseProgram
     .name('majas')
     .description('Markdown And JSON Are Similar - format-agnostic structured data converter')
@@ -22,54 +21,61 @@ const program = baseProgram
         '-i, --infer',
         'Infer input format from file extension; treat `--from` as a fallback on ambiguous input'
     )
-    .helpOption(false)
     .option('--help [format]', 'Get general help or help for a specific format')
-    .allowUnknownOption()
-    .argument('[args...]')
-    .parse();
+    .helpOption(false)
+    .argument('[FILE]')
+    .parse(formatOptions.args, { from: 'user' });
 
 const o = program.opts();
 
 if (o.help !== undefined) {
+    let helpText = `  -i<option>, --in-<option>   Pass an option to the input format
+  -o<option>, --out-<option>  Pass an option to the output format
+`;
+
     if (typeof o.help === 'string') {
         const format = findFormat(o.help);
-        const options =
-            format.optionsSchema === undefined
-                ? '(no options)'
-                : Object.entries(format.optionsSchema)
-                      .map(([option, schema]) => {
-                          const desc =
-                              typeof schema === 'object' &&
-                              schema.description +
-                                  (schema.default
-                                      ? ` (default value: ${String(schema.default)})`
-                                      : '');
-                          return desc ? `${option} -- ${desc}` : option;
-                      })
-                      .join('\n');
-        program.addHelpText(
-            'after',
-            `
-HELP FOR FORMAT '${o.help}'
+        const options = map(opts => {
+            const optEntries = Object.entries(opts);
+            const maxLength = Math.max(...optEntries.map(([k]) => k.length));
+            return optEntries.map(([option, schema]) => {
+                const desc =
+                    typeof schema === 'object' &&
+                    schema.description +
+                        (schema.default ? ` (default value: ${String(schema.default)})` : '');
+                return desc ? `${option.padEnd(maxLength)}  ${desc}` : option;
+            });
+        }, format.optionsSchema) ?? ['(no options)'];
+        helpText += `
+Help for format ${o.help}:
+  ${[format.displayName, ...format.aliases].join(', ')}
+  Accepts: ${format.accepts}
+  Emits: ${format.emits}
+${o.help} options:
+  ${options.join('\n  ')}`;
+    } else {
+        helpText += `
+Formats:
+  ${formats.map(f => [f.displayName, ...f.aliases].join(', ')).join('\n  ')}
 
-${options}`
-        );
+Note: format names are case-insensitive.`;
     }
+
+    program.addHelpText('after', helpText);
     program.help();
 }
 
-const output = o.out === undefined ? stdout : createWriteStream(o.out);
-const args = parseArgs(program.args);
-
 const sourceFormat = ((): Format => {
     if (o.infer) {
-        const inferred = map(inferFormat, args.inputFile);
+        const inferred = map(inferFormat, program.args[0]);
         if (inferred) return inferred;
         if (o.from !== undefined) {
             console.log('fallback to --from');
             return findFormat(o.from);
         }
-        return program.error(`could not infer input format for ${args.inputFile}`);
+        return program.error(
+            'could not infer input format' + (program.args[0] ? ` for ${program.args[0]}` : '')
+        );
     }
     if (o.from !== undefined) return findFormat(o.from);
     return program.error(`missing --from option`);
@@ -78,9 +84,10 @@ const sourceFormat = ((): Format => {
 if (o.to === undefined) {
     console.log(sourceFormat.displayName);
 } else {
-    const ir = sourceFormat.create(args.outputOptions).parse(args.inputFile ?? stdin.read());
-    const result = findFormat(o.to).create(args.outputOptions).emit(ir);
-    output.write(result);
+    const ir = sourceFormat
+        .create(formatOptions.input)
+        .parse(program.args[0] ?? (await readFromStdin()));
+    findFormat(o.to).create(formatOptions.output).emit(ir, o.out);
 }
 
 function inferFormat(path: string): Format | undefined {
@@ -100,55 +107,4 @@ function findFormat(name: string): Format {
             return format;
     }
     return program.error(`invalid format: ${o.from}`);
-}
-
-function parseArgs(args: readonly string[]) {
-    let inputFile: string | undefined;
-
-    const inputOptions: Options = {};
-    const outputOptions: Options = {};
-    const option: {
-        bag: Options;
-        key?: string;
-    } = { bag: inputOptions };
-    let processOptions = true;
-
-    let i = 0;
-    for (const arg of args) {
-        i++;
-        if (processOptions && arg == '--') {
-            processOptions = false;
-            continue;
-        }
-        if (
-            processOptions &&
-            (detectPrefix(arg, inputOptions, '-i') ||
-                detectPrefix(arg, inputOptions, '--in-') ||
-                detectPrefix(arg, outputOptions, '-o') ||
-                detectPrefix(arg, outputOptions, '--out-'))
-        ) {
-            continue;
-        }
-        if (option.key !== undefined) {
-            option.bag[option.key] = arg;
-            continue;
-        }
-        if (inputFile === undefined) {
-            inputFile = arg;
-            continue;
-        }
-        program.error(`i don't know what to do with this argument: '${arg}' (position ${i})`);
-    }
-    return {
-        inputFile,
-        inputOptions,
-        outputOptions,
-    };
-
-    function detectPrefix(arg: string, bag: Options, prefix: string) {
-        return (
-            arg.startsWith(prefix) &&
-            ((option.bag = bag)[(option.key = arg.slice(prefix.length))] = true)
-        );
-    }
 }
