@@ -1,13 +1,13 @@
 # majas
 
-> Markdown and JSON Are Similar.
-> Because all data is hierarchical if you look at it long enough.
+> _Markdown and JSON Are Similar._\
+> All data is hierarchical if you look at it long enough.
 
 **majas** is a format-agnostic structured data converter. It lets you translate between hierarchical formats like Markdown, JSON, and directory trees — not by trying to preserve syntax, but by capturing the **underlying shape**.
 
 Whether you're trying to break up a massive Markdown doc, reverse-engineer a messy JSON export, or treat your filesystem like a structured document — **majas** gives you tools to traverse, transform, and rematerialize **hierarchical data**.
 
-## ✨ Philosophy
+## Philosophy
 
 - **Structure > Syntax**  
   Markdown, JSON, XML, folders — all express _trees_. majas extracts the hierarchy and leaves the quirks behind.
@@ -21,14 +21,7 @@ Whether you're trying to break up a massive Markdown doc, reverse-engineer a mes
 - **CLI-first, API-ready**  
   The core logic is a clean TypeScript library. The CLI is just a friendly wrapper.
 
-## 🧱 Stack
-
-- **Language**: Node.js with TypeScript
-- **Parser**: `unified` + `remark` for Markdown, custom logic for JSON and filesystem
-- **API-first**: Reusable module for embedding or scripting
-- **No build step**: Runs directly via `npx`, `tsx`, or local Node install
-
-## 📦 Installation
+## Installation
 
 ```sh
 npm install -g majas
@@ -36,60 +29,86 @@ npm install -g majas
 npx majas ...
 ```
 
-## 📐 IR Structure
+## Usage
 
-```ts
-type IRNode = {
-  title?: string; // e.g., heading, key, file/folder name
-  content?: string; // e.g., paragraph text, string value, file content
-  children?: IRNode[]; // nested structure
-};
-```
+<code>majas [-i] [-4 *from*] [-2 *to*] [-o *output*] [-i*option*...] [-o*option*] [FILE]</code>
 
-Every format is parsed into this shape. Every export is rendered from it.
+If no input file is provided, data is read from **stdin**.
 
-## 🚀 Usage
+Output is always written to **stdout** unless `--out` is specified.
 
-### Convert between formats
+## Options
+
+| Flag              | Alias | Description                                                                                                             |
+| ----------------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
+| `--from <format>` | `-4`  | Source format. **Optional** if file extension is unambiguous.                                                           |
+| `--to <format>`   | `-2`  | Target format. If absent, Majas simply outputs the resolved input format and no conversion is performed.                |
+| `--in-* <value>`  | `-i*` | Format-specific input options (e.g. `--in-indent 4`, `--in-encoding ascii`)                                             |
+| `--out-* <value>` | `-o*` | Format-specific output options                                                                                          |
+| `--out <file>`    | `-o`  | Output file (defaults to stdout)                                                                                        |
+| `--help [FORMAT]` | `-h`  | Print usage help (including list of supported formats). If format is specified: explain format, print available options |
+| `--infer`         | `-i`  | Infer input format from file extension; treat `--from` as a fallback on ambiguous input                                 |
+| `--version`       | `-V`  | Show program version.                                                                                                   |
+| `--help`          |       | Show help.                                                                                                              |
+
+## Examples
+
+### Convert a Markdown doc into a directory of smaller .md files
 
 ```sh
-majas convert <input> --from <format> --to <format> [options]
+majas notes.md --from md --to fs
 ```
 
-#### Examples
+### Flatten a deeply nested JSON structure into Markdown
 
 ```sh
-# Convert a Markdown doc into a directory of smaller .md files
-majas convert notes.md --from md --to fs
-
-# Flatten a deeply nested JSON structure into Markdown
-majas convert data.json --from json --to md
-
-# Turn a folder of text files into a single Markdown document
-majas convert ./docs --from fs --to md
+majas data.json --from json --to md
 ```
 
-### Options
+### Turn a folder of text files into a single Markdown document
 
-| Flag      | Description                                |
-| --------- | ------------------------------------------ |
-| `--depth` | Max depth to traverse (default: full tree) |
-| `--out`   | Output path or directory                   |
-| `--from`  | Input format: `md`, `json`, `fs`           |
-| `--to`    | Output format: `md`, `json`, `fs`          |
+```sh
+majas ./docs --from fs --to md
+```
 
-More options and format-specific configuration coming soon.
+### Convert from file (format inferred)
 
-## 🔮 Roadmap
+```sh
+majas -2 json mydoc.md > output.json
+```
 
-- More input/output formats: XML, YAML, HTML
-- Configurable mappings (e.g., array ↔ heading list)
-- Metadata support in IR (line numbers, paths, source type)
-- GUI/Playground
-- VSCode extension?
+### Convert from stdin (must specify `--from`)
 
----
+```sh
+majas -4 xml -2 markdown < input.xml
+```
 
-**majas** is in early development. Expect sharp edges, surprising conversions, and plenty of possibilities.
+### With format-specific options
+
+```sh
+majas -4 json -2 markdown --out-table-style compact input.json
+```
+
+### Retrieve the inferred format of a file
+
+```sh
+$ majas --infer input.xml
+XML
+```
+
+## How it works
+
+- `-4` means you're using majas "**for**" a format.
+- `-2` means you're converting "**to**" a format.
+- If `--from` is not provided, `majas` will try to **infer the input format** from the file extension. Ambiguity is an error.
+- If you pass `stdin`, `--from` is **required**.
+- All input is parsed into a generic **intermediate representation (IR)**.
+- All output is generated from that IR — so conversion is always **format → IR → format**.
+
+## Notes
+
+- Majas is **format-agnostic**, **language-agnostic**, and sometimes even **logic-agnostic**.
+- It doesn't care what you're doing. But it _knows_ all data is a tree.
+- Be careful: using `majas` means accepting the truth of its name.
 
 > Markdown and JSON are similar. Everything else is detail.
