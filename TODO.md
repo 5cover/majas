@@ -8,5 +8,5 @@
   - [x] parse markdown
   - [x] output directory
 - [ ] publish
-- [ ] filesystem: option for invalid character replacement
-- [ ] filesystem: option to add heading to the generated file based on hierarchy (like a markdown heading)
+- [x] filesystem: option for invalid character replacement
+- [x] filesystem: option to add heading to the generated file based on hierarchy (like a markdown heading)

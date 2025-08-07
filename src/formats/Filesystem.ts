@@ -12,13 +12,23 @@ export interface FSTreeNode {
     children: FSTree;
 }
 
+export interface Options {
+    baseDirname: string;
+    baseFilename: string;
+    invalidFilenameCharReplacement?: string | ((substring: string) => string);
+    fileHeader?: (title: string | number | undefined) => string;
+}
+
+export const DefaultOptions = {
+    baseDirname: '.',
+    baseFilename: 'out',
+} as const satisfies Options;
+
 export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
-    constructor(
-        format: Format,
-        private readonly baseDirname = '.',
-        private readonly baseFilename = 'out'
-    ) {
+    private readonly options: Readonly<Options>;
+    constructor(format: Format, options?: Partial<Readonly<Options>>) {
         super(format);
+        this.options = { ...DefaultOptions, ...options };
     }
     protected override parseImpl(input: FSTreeNode): IRNode {
         if (typeof input.children === 'string') {
@@ -41,26 +51,35 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
 
     override emit(output: Document): FSTree {
         const children = new Map<string, FSTree>();
-        const walk = (parent: Map<string, FSTree>, node: IRNode, index: number) => {
+        const walk = (parent: Map<string, FSTree>, node: IRNode, index?: number) => {
             const filename: string | undefined =
-                map(sanitize, node.title) ?? (isNaN(index) ? undefined : index.toString());
+                map(
+                    t => sanitize(t, { replacement: this.options.invalidFilenameCharReplacement }),
+                    node.title
+                ) ?? index?.toString();
             if (node.content !== undefined) {
                 const contentFilename = uniqify(
-                    `${filename ?? this.baseFilename}.${output.format.fileExtensions[0] ?? 'txt'}`,
+                    `${filename ?? this.options.baseFilename}.${output.format.fileExtensions[0] ?? 'txt'}`,
                     s => parent.has(s)
                 );
-                parent.set(contentFilename, node.content);
+                parent.set(
+                    contentFilename,
+                    (this.options.fileHeader?.(node.title ?? index?.toString()) ?? '') +
+                        node.content
+                );
             }
             // allow empty directory when no content
             if (node.children?.items.length || node.content === undefined) {
-                const childrenDirname = uniqify(filename ?? this.baseDirname, s => parent.has(s));
+                const childrenDirname = uniqify(filename ?? this.options.baseDirname, s =>
+                    parent.has(s)
+                );
                 const children = new Map<string, FSTree>();
                 parent.set(childrenDirname, children);
                 node.children?.items.forEach((n, i) => walk(children, n, i));
             }
         };
 
-        walk(children, output.root, NaN);
+        walk(children, output.root);
         return children;
     }
 }

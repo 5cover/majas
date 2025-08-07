@@ -1,4 +1,6 @@
-import type { Options } from '../core/Format.js';
+import type { Format, Options } from '../core/Format.js';
+import * as p from 'path';
+import formats from '../core/formats.js';
 
 export function throwf(e: unknown): never {
     throw e;
@@ -35,7 +37,8 @@ export function preprocessOptionsArgs(args: readonly string[]) {
         ) {
             /* empty */
         } else if (option.key !== undefined) {
-            option.bag[option.key] = arg;
+            const argNumber = parseFloat(arg);
+            option.bag[option.key] = isNaN(argNumber) ? arg : argNumber;
             option.key = undefined;
         } else {
             newArgs.push(arg);
@@ -70,4 +73,23 @@ export async function readFromStdin() {
 
         process.stdin.on('error', reject);
     });
+}
+
+export function inferFormat(path: string): Format | undefined {
+    const ext = p.extname(path).slice(1);
+    for (const format of formats) {
+        if ((format.fileExtensions as string[]).includes(ext)) {
+            return format;
+        }
+    }
+    return undefined;
+}
+
+export function findFormat(name: string): Format | undefined {
+    name = name.toLowerCase();
+    for (const format of formats) {
+        if (format.displayName.toLowerCase() == name || (format.aliases as string[]).includes(name))
+            return format;
+    }
+    return undefined;
 }

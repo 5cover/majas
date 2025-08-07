@@ -3,8 +3,7 @@ import { program as baseProgram } from '@commander-js/extra-typings';
 import pkg from '../package.json' with { type: 'json' };
 import type { Format } from './core/Format.js';
 import formats from './core/formats.js';
-import { map, preprocessOptionsArgs, readFromStdin } from './util/misc.js';
-import * as p from 'path';
+import { findFormat, inferFormat, map, preprocessOptionsArgs, readFromStdin } from './util/misc.js';
 
 const formatOptions = preprocessOptionsArgs(process.argv.slice(2));
 const program = baseProgram
@@ -29,82 +28,76 @@ const program = baseProgram
 const o = program.opts();
 
 if (o.help !== undefined) {
-    let helpText = `  -i<option>, --in-<option>   Pass an option to the input format
-  -o<option>, --out-<option>  Pass an option to the output format
-`;
-
-    if (typeof o.help === 'string') {
-        const format = findFormat(o.help);
-        const options = map(opts => {
-            const optEntries = Object.entries(opts);
-            const maxLength = Math.max(...optEntries.map(([k]) => k.length));
-            return optEntries.map(([option, schema]) => {
-                const desc =
-                    typeof schema === 'object' &&
-                    schema.description +
-                        (schema.default ? ` (default value: ${String(schema.default)})` : '');
-                return desc ? `${option.padEnd(maxLength)}  ${desc}` : option;
-            });
-        }, format.optionsSchema) ?? ['(no options)'];
-        helpText += `
-Help for format ${o.help}:
-  ${[format.displayName, ...format.aliases].join(', ')}
-  Accepts: ${format.accepts}
-  Emits: ${format.emits}
-${o.help} options:
-  ${options.join('\n  ')}`;
-    } else {
-        helpText += `
-Formats:
-  ${formats.map(f => [f.displayName, ...f.aliases].join(', ')).join('\n  ')}
-
-Note: format names are case-insensitive.`;
-    }
-
-    program.addHelpText('after', helpText);
+    program.addHelpText(
+        'after',
+        `  -i<option>, --in-<option>   Pass an option to the input format
+  -o<option>, --out-<option>  Pass an option to the output format\n` +
+            (typeof o.help === 'string'
+                ? (map(formatHelp, findFormat(o.help)) ??
+                  `\n${invalidFormatMsg(o.help)}\n${formatsHelp()}`)
+                : formatsHelp())
+    );
     program.help();
 }
 
 const sourceFormat = ((): Format => {
     if (o.infer) {
-        const inferred = map(inferFormat, program.args[0]);
-        if (inferred) return inferred;
-        if (o.from !== undefined) {
+        let inferred = map(inferFormat, program.args[0]);
+        if (!inferred && o.from !== undefined) {
             console.log('fallback to --from');
-            return findFormat(o.from);
+            inferred = findFormat(o.from);
         }
-        return program.error(
-            'could not infer input format' + (program.args[0] ? ` for ${program.args[0]}` : '')
+        return (
+            inferred ??
+            program.error(
+                'could not infer input format' + (program.args[0] ? ` for ${program.args[0]}` : '')
+            )
         );
     }
-    if (o.from !== undefined) return findFormat(o.from);
-    return program.error(`missing --from option`);
+    return (
+        map(findFormat, o.from ?? program.error(`missing --from option`)) ??
+        program.error(`invalid format: ${o.from}`)
+    );
 })();
 
 if (o.to === undefined) {
     console.log(sourceFormat.displayName);
 } else {
+    const outFormat = findFormat(o.to) ?? program.error(invalidFormatMsg(o.to));
     const ir = sourceFormat
         .create(formatOptions.input)
         .parse(program.args[0] ?? (await readFromStdin()));
-    findFormat(o.to).create(formatOptions.output).emit(ir, o.out);
+    outFormat.create(formatOptions.output).emit(ir, o.out);
 }
 
-function inferFormat(path: string): Format | undefined {
-    const ext = p.extname(path).slice(1);
-    for (const format of formats) {
-        if ((format.fileExtensions as string[]).includes(ext)) {
-            return format;
-        }
-    }
-    return undefined;
+function formatsHelp() {
+    return `\nFormats:
+  ${formats.map(f => [f.displayName, ...f.aliases].join(', ')).join('\n  ')}
+
+Note: format names are case-insensitive.\n`;
 }
 
-function findFormat(name: string): Format {
-    name = name.toLowerCase();
-    for (const format of formats) {
-        if (format.displayName.toLowerCase() == name || (format.aliases as string[]).includes(name))
-            return format;
-    }
-    return program.error(`invalid format: ${o.from}`);
+function formatHelp(format: Format) {
+    const options = map(opts => {
+        const optEntries = Object.entries(opts);
+        const maxLength = Math.max(...optEntries.map(([k]) => k.length));
+        return optEntries.map(([option, schema]) => {
+            const desc =
+                typeof schema === 'object' &&
+                schema.description +
+                    (schema.default ? ` (default value: ${String(schema.default)})` : '');
+            return desc ? `${option.padEnd(maxLength)}  ${desc}` : option;
+        });
+    }, format.optionsSchema) ?? ['(no options)'];
+    return `\nHelp for format ${o.help}:
+  ${[format.displayName, ...format.aliases].join(', ')}
+  Accepts: ${format.accepts}
+  Emits: ${format.emits}
+
+${o.help} options:
+  ${options.join('\n  ')}\n`;
+}
+
+function invalidFormatMsg(format: string) {
+    return `invalid format: ${format}`;
 }

@@ -56,7 +56,7 @@ export interface OrderableArray {
      * - `false` for JSON objects, unordered sets, or filesystem folders.
      */
     ordered: boolean;
-    items: IRNode[];
+    items: readonly IRNode[];
 }
 export const IRNodeSchema = {
     type: 'object',

@@ -4,8 +4,24 @@ import type Document from '../core/Document.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { throwf } from '../util/misc.js';
 import { FormatterBase } from '../core/Formatter.js';
+import type { Format } from '../core/Format.js';
+
+export const HeadingDepths = [1, 2, 3, 4, 5, 6] as const satisfies md.Heading['depth'][];
+
+export const DefaultOptions = {
+    depth: 6,
+} as const satisfies Options;
+
+export interface Options {
+    depth: md.Heading['depth'];
+}
 
 export default class Markdown extends FormatterBase<string> {
+    private readonly options: Readonly<Options>;
+    constructor(format: Format, options?: Partial<Readonly<Options>>) {
+        super(format);
+        this.options = { ...DefaultOptions, ...options };
+    }
     private input!: string;
     protected override parseImpl(input: string): IRNode {
         this.input = input;
@@ -22,39 +38,32 @@ export default class Markdown extends FormatterBase<string> {
         const h0: IRNode = {
             children: { ordered: true, items: h0children },
         };
-        const stack = [h0children];
+        const stack: (readonly [md.Heading['depth'] | 0, IRNode[]])[] = [[0, h0children]];
         let lastHeading = h0;
         let previousHeadingEndOffset = 0;
-        let previousHeadingLevel: md.Heading['depth'] | 0 = 0;
-        for (const md of parent.children) {
-            if (!isHeading(md)) continue;
+        for (const n of parent.children) {
+            if (!isHeading(n) || n.depth > this.options.depth) continue;
             const content = this.input
                 .substring(
                     previousHeadingEndOffset,
-                    md.position?.start.offset ?? throwf(new Error('missing node start offset'))
+                    n.position?.start.offset ?? throwf(new Error('missing node start offset'))
                 )
                 .trim();
             if (content) lastHeading.content = content;
-
-            if (previousHeadingLevel >= md.depth) {
-                // Parent
+            while (stack[stack.length - 1][0] >= n.depth) {
                 stack.pop();
             }
             const newScope: IRNode[] = [];
-            stack[stack.length - 1].push(
+            stack[stack.length - 1][1].push(
                 (lastHeading = {
                     // Get raw child source
-                    title: this.getSource(md.children),
+                    title: this.getSource(n.children),
                     children: { ordered: true, items: newScope },
                 })
             );
-            if (previousHeadingLevel <= md.depth) {
-                // Child
-                stack.push(newScope);
-            }
-            previousHeadingLevel = md.depth;
+            stack.push([n.depth, newScope]);
             previousHeadingEndOffset =
-                md.position?.end.offset ?? throwf(new Error('missing node end offset'));
+                n.position?.end.offset ?? throwf(new Error('missing node end offset'));
         }
 
         const trailingContent = this.input.substring(previousHeadingEndOffset).trim();

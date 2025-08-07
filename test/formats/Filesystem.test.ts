@@ -1,11 +1,15 @@
 import { describe, it } from 'node:test';
 import formats from '../../src/core/formats.js';
 import assert from 'node:assert/strict';
-import Filesystem from '../../src/formats/Filesystem.js';
+import Filesystem, { type Options } from '../../src/formats/Filesystem.js';
 import type { FSTree } from '../../src/fstree.js';
 
-const formatter = new Filesystem(formats[2]);
+function filesystem(options?: Readonly<Partial<Options>>) {
+    return new Filesystem(formats[2], options);
+}
+
 const testFormat = formats[1];
+
 /*
 basic RULES to test for Filesystem
 
@@ -29,7 +33,7 @@ IRNode n:
 describe('Filesystem formatter', () => {
     it('emits an anonymous empty node', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {},
             }),
@@ -38,7 +42,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits a named empty node', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     title: 'empty',
@@ -49,7 +53,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits an anonymous content node', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     content: 'hello',
@@ -60,7 +64,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits a named content node', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     title: 'file',
@@ -72,7 +76,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits an empty anonymous directory', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     children: {
@@ -86,7 +90,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits an empty named directory', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     title: 'dir',
@@ -101,7 +105,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits a directory with one named file', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     children: {
@@ -120,7 +124,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits a directory of unnamed files', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     children: {
@@ -153,7 +157,7 @@ describe('Filesystem formatter', () => {
     });
     it('emits content and directory', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     content: 'contentfulness',
@@ -176,13 +180,43 @@ describe('Filesystem formatter', () => {
 
     it('emits a named empty node with illegal filename characters', () => {
         assert.deepEqual(
-            formatter.emit({
+            filesystem().emit({
                 format: testFormat,
                 root: {
                     title: 'em/pty',
                 },
             }),
             new Map([['empty', new Map()]])
+        );
+    });
+
+    it('emits a named empty node with illegal filename characters and replaces them', () => {
+        assert.deepEqual(
+            filesystem({
+                invalidFilenameCharReplacement: '_',
+            }).emit({
+                format: testFormat,
+                root: {
+                    title: 'em/pty',
+                },
+            }),
+            new Map([['em_pty', new Map()]])
+        );
+    });
+
+    it('emits a named content with illegal filename characters with replacement and custom header', () => {
+        assert.deepEqual(
+            filesystem({
+                invalidFilenameCharReplacement: '-',
+                fileHeader: title => `# ${title}\n\n`,
+            }).emit({
+                format: testFormat,
+                root: {
+                    title: 'e/mp//y',
+                    content: 'hello',
+                },
+            }),
+            new Map([[`e-mp--y.${testFormat.fileExtensions[0]}`, '# e/mp//y\n\nhello']])
         );
     });
 });

@@ -2,7 +2,7 @@ import type { JSONSchema } from 'json-schema-to-ts';
 import type { Raw } from './Formatter.js';
 import type Document from './Document.js';
 
-export type Options = Partial<Record<string, string | true>>;
+export type Options = Partial<Record<string, string | number | true>>;
 
 export type OptionsSchema = Record<string, JSONSchema>;
 

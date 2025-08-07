@@ -1,13 +1,16 @@
-import FilesystemFormatter from '../formats/Filesystem.js';
-import IRFormatter from '../formats/IR.js';
-import MarkdownFormatter from '../formats/Markdown.js';
+import * as Filesystem from '../formats/Filesystem.js';
+import * as IR from '../formats/IR.js';
+import * as Markdown from '../formats/Markdown.js';
 import { type Format, type OptionsSchema } from './Format.js';
-import { Ajv } from 'ajv';
+import { Ajv, type Schema } from 'ajv';
 import { wrapValidatorAsTypeGuard } from 'json-schema-to-ts';
 import { decodeRawInput, type Raw } from './Formatter.js';
 import * as fstree from '../fstree.js';
 import { stdout } from 'process';
 import { createWriteStream } from 'fs';
+import format from 'string-template';
+import { map } from '../util/misc.js';
+import { EOL } from 'os';
 
 const ajv = new Ajv({
     useDefaults: true,
@@ -35,6 +38,7 @@ const encoding = {
 
 const optionSchemas = {
     ir: {
+        encoding,
         space: {
             oneOf: [
                 {
@@ -45,15 +49,40 @@ const optionSchemas = {
             description:
                 'Adds indentation, white space, and line break characters to the output JSON text to make it easier to read. Same syntax as the JSON.stringify space argument',
         },
-        encoding,
     },
     md: {
         encoding,
+        depth: {
+            enum: Markdown.HeadingDepths,
+            description:
+                'Maximum depth of headings to parse. Headings deeper than this limit will be included as regular content.',
+            default: Markdown.DefaultOptions.depth,
+        },
     },
     fs: {
         encoding,
+        basedir: {
+            type: 'string',
+            description: 'Base dirname to place the root node children in. May be a path.',
+            default: Filesystem.DefaultOptions.baseDirname,
+        },
+        basefile: {
+            type: 'string',
+            description:
+                'Base filename to place root node content in. May be a path. Extension not included.',
+            default: Filesystem.DefaultOptions.baseFilename,
+        },
+        replace: {
+            type: 'string',
+            description: 'String to replace invalid filename characters in node titles with.',
+        },
+        header: {
+            type: 'string',
+            description:
+                'string-template replacement pattern for file headers. {title} is replaced by the node title. {n} is replaced by a newline.',
+        },
     },
-} as const;
+} as const satisfies Record<string, Schema>;
 
 export default [
     {
@@ -65,11 +94,7 @@ export default [
         emits: 'IRNode JSON',
         create(options) {
             const o = parseOptions(options, optionSchemas.ir);
-            if (typeof o.space === 'string') {
-                const spaceN = parseInt(o.space);
-                if (spaceN >= 0) o.space = spaceN;
-            }
-            const irFormatter = new IRFormatter(this, o.space);
+            const irFormatter = new IR.default(this, o.space);
             return {
                 parse(input) {
                     return irFormatter.parse(decodeRawInput(input, o.encoding));
@@ -89,7 +114,7 @@ export default [
         emits: 'markdown markup text',
         create(options) {
             const o = parseOptions(options, optionSchemas.md);
-            const mdFormatter = new MarkdownFormatter(this);
+            const mdFormatter = new Markdown.default(this, o);
             return {
                 parse(input) {
                     return mdFormatter.parse(decodeRawInput(input, o.encoding));
@@ -109,7 +134,12 @@ export default [
         emits: 'a filesystem subtree at the output location or the current directory if unspecified.',
         create(options) {
             const o = parseOptions(options, optionSchemas.fs);
-            const fsFormatter = new FilesystemFormatter(this);
+            const fsFormatter = new Filesystem.default(this, {
+                baseDirname: o.basedir,
+                baseFilename: o.basefile,
+                fileHeader: map(fmt => title => format(fmt, { title, n: EOL }), o.header),
+                invalidFilenameCharReplacement: o.replace,
+            });
             return {
                 parse(input) {
                     const title = decodeRawInput(input, o.encoding, x => x);
@@ -140,6 +170,8 @@ function parseOptions<Schema extends OptionsSchema>(options: unknown, schema: Sc
     ) {
         return options;
     } else {
-        throw new Error(`Invalid options: ${ajv.errorsText(ajv.errors)}`);
+        throw new Error(
+            `Invalid options: ${ajv.errorsText(ajv.errors)}: ${JSON.stringify(options)}`
+        );
     }
 }
