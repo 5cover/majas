@@ -9,22 +9,26 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
+    "removeComments": true,
     // Enable strict type checking so you can catch bugs early
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "alwaysStrict": true,
     "noImplicitOverride": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true,
+    "strictBindCallApply": true,
+    "strictBuiltinIteratorReturn": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "noStrictGenericChecks": false,
+    "noEmit": true,
+    "allowJs": true,
     // Transpile our TypeScript code to JavaScript
     "module": "NodeNext",
-    "outDir": "dist",
-    // Emit type declarations
-    "declaration": true,
     "lib": ["es2022"]
   },
-  // Include the necessary files for your project
-  "include": ["src", "test"],
   "exclude": ["node_modules", "dist"]
 }

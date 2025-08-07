@@ -10,7 +10,9 @@ export default interface IRNode {
      * Optional label for the node.
      *
      * - Represents keys in JSON, tag names in XML, headings in Markdown, or filenames in a directory.
-     * - May be empty (`""`) or undefined for anonymous content nodes.
+     * - Empty string title is allowed.
+     *
+     * absent <=> undefined
      */
     title?: string;
 
@@ -18,27 +20,44 @@ export default interface IRNode {
      * Optional content of the node as a string.
      *
      * - Always stringified (even if the original data was a number, boolean, etc.).
-     * - Nodes may have content, children, or both.
+     * - Empty string content is allowed.
+
+     * absent <=> undefined
      */
     content?: string;
 
     /**
      * Ordered list of child nodes.
      *
-     * - Never undefined. An empty array means the node has no children.
-     * - The `$`-titled child is reserved (e.g., for representing XML attributes).
+     * - May be undefined, meaning the node has no children.
+     *
+     * absent <=> undefined <=> { ordered: true, items: [] } <=> { ordered: false, items: [] }
      */
-    children: IRNode[];
+    children?: OrderableArray;
+}
 
+/**
+ * Normalizes an IRNode to a consistent, minimal representation of the same semantics.
+ * May mutate @p node and its children and returns it.
+ */
+export function normalize(node: IRNode) {
+    if (node.title === undefined) delete node.title;
+    if (node.content === undefined) delete node.content;
+    if (node.children === undefined || node.children.items.length === 0) delete node.children;
+    else node.children.items.forEach(normalize);
+    return node;
+}
+
+export interface OrderableArray {
     /**
-     * Indicates whether the order of `children` is semantically meaningful.
+     * Indicates whether the order of `items` is semantically meaningful.
      *
      * - `true` for JSON arrays, XML elements, Markdown lists, etc.
      * - `false` for JSON objects, unordered sets, or filesystem folders.
      */
-    childrenOrdered: boolean;
+    ordered: boolean;
+    items: readonly IRNode[];
 }
-
 export const IRNodeSchema = {
     type: 'object',
     additionalProperties: false,
@@ -50,20 +69,19 @@ export const IRNodeSchema = {
             type: 'string',
         },
         children: {
-            type: 'array',
-            items: {
-                $ref: '#',
+            type: 'object',
+            properties: {
+                ordered: {
+                    type: 'boolean',
+                },
+                items: {
+                    type: 'array',
+                    items: {
+                        $ref: '#',
+                    },
+                },
             },
-        },
-        childrenOrdered: {
-            type: 'boolean',
+            required: ['ordered', 'items'],
         },
     },
-    required: ['children', 'childrenOrdered'],
 } as const satisfies Schema;
-
-export function defineNode(node: Partial<IRNode>): IRNode {
-    node.children ??= [];
-    node.childrenOrdered ??= false;
-    return node as IRNode;
-}

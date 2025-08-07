@@ -1,58 +1,57 @@
-import test from 'node:test';
+import { describe, it } from 'node:test';
 import * as assert from 'node:assert/strict';
-import IR from '../../src/formats/IR.js';
-import { defineNode } from '../../src/core/IRNode.js';
 import ParseError from '../../src/core/ParseError.js';
+import formats from '../../src/core/formats.js';
+import type IRNode from '../../src/core/IRNode.js';
+import IR from '../../src/formats/IR.js';
+import { assertEqualsIR } from '../testing.js';
 
 // Nominal
 
-test('IR parses a minimal JSON tree', () => {
-    const json = `{
-    "title": "root",
-    "children": [],
-    "childrenOrdered": false
+const irFormat = formats[0];
+const ir = new IR(irFormat);
+describe('IR formatter', () => {
+    it('parses a minimal JSON tree', () => {
+        const json = `{
+    "title": "root"
   }`;
 
-    const ir = new IR();
-    const doc = ir.parse(json);
+        const doc = ir.parse(json);
 
-    assert.deepEqual(
-        doc.root,
-        defineNode({
+        assertEqualsIR(doc.root, {
             title: 'root',
-        })
-    );
-});
-
-test('IR round-trips cleanly with write + parse', () => {
-    const original = {
-        title: 'section',
-        content: 'hello',
-        children: [defineNode({ title: 'child', content: 'world' })],
-        childrenOrdered: true,
-    };
-
-    const ir = new IR();
-    const printed = ir.write({ root: original, format: ir });
-    const parsed = ir.parse(printed);
-
-    assert.deepEqual(parsed.root, original);
-});
-
-// Error
-
-test('IR throws ParseError on invalid JSON syntax', () => {
-    const ir = new IR();
-    const input = `{ title: "no quotes" }`; // malformed JSON
-
-    assert.throws(() => ir.parse(input), ParseError);
-});
-
-test('IR throws ParseError on invalid IR shape', () => {
-    const ir = new IR();
-    const input = JSON.stringify({
-        title: 'missing children and childrenOrdered',
+        });
     });
 
-    assert.throws(() => ir.parse(input), ParseError);
+    it('round-trips cleanly with write + parse', () => {
+        const original: IRNode = {
+            title: 'section',
+            content: 'hello',
+            children: { ordered: true, items: [{ title: 'child', content: 'world' }] },
+        };
+
+        const printed = ir.emit({ root: original, format: irFormat });
+        const parsed = ir.parse(printed);
+
+        assertEqualsIR(parsed.root, original);
+    });
+
+    // Error
+
+    it('throws ParseError on invalid JSON syntax', () => {
+        const input = `{ title: "no quotes" }`; // malformed JSON
+
+        assert.throws(() => ir.parse(input), ParseError);
+    });
+
+    it('throws ParseError on invalid IR shape', () => {
+        const input = JSON.stringify({
+            title: 'missing children ordered',
+            children: {
+                items: [],
+            },
+        });
+
+        assert.throws(() => ir.parse(input), ParseError);
+    });
 });

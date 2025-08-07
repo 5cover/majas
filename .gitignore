@@ -32,3 +32,5 @@ coverage/
 
 # Optional debug output
 *.log
+
+**/*.js.map
