@@ -1,5 +1,5 @@
 {
-  "name": "@5cover/majas",
+  "name": "majas",
   "version": "1.0.0",
   "description": "Format-agnostic structure converter.",
   "keywords": [
@@ -30,7 +30,7 @@
     "url": "git+https://github.com/5cover/majas.git"
   },
   "license": "MIT",
-  "author": "5cover",
+  "author": "Scover",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
