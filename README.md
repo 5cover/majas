@@ -111,4 +111,14 @@ XML
 - It doesn't care what you're doing. But it _knows_ all data is a tree.
 - Be careful: using `majas` means accepting the truth of its name.
 
+## Changelog
+
+## 1.0.1
+
+- Moved @types/fs-extra from dependencies to devDependencies
+
+### 1.0.0
+
+Initial release
+
 > Markdown and JSON are similar. Everything else is detail.
