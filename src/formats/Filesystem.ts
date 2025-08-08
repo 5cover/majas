@@ -16,12 +16,26 @@ export interface Options {
     baseDirname: string;
     baseFilename: string;
     invalidFilenameCharReplacement?: string | ((substring: string) => string);
-    fileHeader?: (title: string | number | undefined) => string;
+    /**
+     * Formats file header.
+     * @param title Node title
+     * @param index Node inbdex, 1-based.
+     * @returns Formatted file header string, placed at the start of the file.
+     */
+    header?: (title: string | undefined, index: number | undefined) => string;
+    /**
+     * Formats base file or directory name.
+     * @param title Node title
+     * @param index Node inbdex, 1-based.
+     * @returns Formatted file/directory name string, concatenanted to the appropriate extension for files.
+     */
+    filename: (title: string, index: number | undefined) => string;
 }
 
 export const DefaultOptions = {
     baseDirname: '.',
     baseFilename: 'out',
+    filename: title => title,
 } as const satisfies Options;
 
 export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
@@ -54,7 +68,10 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
         const walk = (parent: Map<string, FSTree>, node: IRNode, index?: number) => {
             const filename: string | undefined =
                 map(
-                    t => sanitize(t, { replacement: this.options.invalidFilenameCharReplacement }),
+                    t =>
+                        sanitize(this.options.filename(t, index), {
+                            replacement: this.options.invalidFilenameCharReplacement,
+                        }),
                     node.title
                 ) ?? index?.toString();
             if (node.content !== undefined) {
@@ -64,8 +81,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
                 );
                 parent.set(
                     contentFilename,
-                    (this.options.fileHeader?.(node.title ?? index?.toString()) ?? '') +
-                        node.content
+                    (this.options.header?.(node.title, index) ?? '') + node.content
                 );
             }
             // allow empty directory when no content
@@ -75,7 +91,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
                 );
                 const children = new Map<string, FSTree>();
                 parent.set(childrenDirname, children);
-                node.children?.items.forEach((n, i) => walk(children, n, i));
+                node.children?.items.forEach((n, i) => walk(children, n, i + 1));
             }
         };
 

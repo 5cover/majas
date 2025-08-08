@@ -8,7 +8,7 @@ import { decodeRawInput, type Raw } from './Formatter.js';
 import * as fstree from '../fstree.js';
 import { stdout } from 'process';
 import { createWriteStream } from 'fs';
-import format from 'string-template';
+import squrlyFormat from 'squrly-format';
 import { map } from '../util/misc.js';
 import { EOL } from 'os';
 
@@ -79,7 +79,12 @@ const optionSchemas = {
         header: {
             type: 'string',
             description:
-                'string-template replacement pattern for file headers. {title} is replaced by the node title. {n} is replaced by a newline.',
+                'squrly-format replacement pattern for file headers. {title} is replaced by the node title. {index} is replaced by the node index. {n} is replaced by a newline.',
+        },
+        filename: {
+            type: 'string',
+            description:
+                'squrly-format replacement pattern for file names. {title} is replaced by the node title. {index} is replaced by the node index. {n} is replaced by a newline.',
         },
     },
 } as const satisfies Record<string, Schema>;
@@ -137,8 +142,15 @@ export default [
             const fsFormatter = new Filesystem.default(this, {
                 baseDirname: o.basedir,
                 baseFilename: o.basefile,
-                fileHeader: map(fmt => title => format(fmt, { title, n: EOL }), o.header),
                 invalidFilenameCharReplacement: o.replace,
+                header: map(
+                    fmt => (title, index) => squrlyFormat(fmt, { title, index, n: EOL }),
+                    o.header
+                ),
+                filename: map(
+                    fmt => (title, index) => squrlyFormat(fmt, { title, index, n: EOL }),
+                    o.filename
+                ),
             });
             return {
                 parse(input) {

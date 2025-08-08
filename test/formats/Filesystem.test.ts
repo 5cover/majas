@@ -10,26 +10,6 @@ function filesystem(options?: Readonly<Partial<Options>>) {
 
 const testFormat = formats[1];
 
-/*
-basic RULES to test for Filesystem
-
-- parse
-
-IRNode from FSTreeNode n
-    title: n.title
-    content: n.children if n.children is a string
-    children: IRNode from FSTreeNode m foreach n.children m
-
-- emit
-
-IRNode n:
-
-- if it has content: create file <n.title ?? ''>.<n.format.fileExtensions[0] ?? 'txt'>
-- if it has children: 
-    - create directory (<n.title ?? index>)
-        - fill it with the same algorithm
-*/
-
 describe('Filesystem formatter', () => {
     it('emits an anonymous empty node', () => {
         assert.deepEqual(
@@ -147,9 +127,9 @@ describe('Filesystem formatter', () => {
                 [
                     `.`,
                     new Map([
-                        [`0.${testFormat.fileExtensions[0]}`, 'hello0'],
-                        [`1.${testFormat.fileExtensions[0]}`, 'hello1'],
-                        [`2.${testFormat.fileExtensions[0]}`, 'hello2'],
+                        [`1.${testFormat.fileExtensions[0]}`, 'hello0'],
+                        [`2.${testFormat.fileExtensions[0]}`, 'hello1'],
+                        [`3.${testFormat.fileExtensions[0]}`, 'hello2'],
                     ]),
                 ],
             ])
@@ -173,7 +153,7 @@ describe('Filesystem formatter', () => {
             }),
             new Map<string, FSTree>([
                 [`out.${testFormat.fileExtensions[0]}`, 'contentfulness'],
-                ['.', new Map([[`0.${testFormat.fileExtensions[0]}`, 'childrenity']])],
+                ['.', new Map([[`1.${testFormat.fileExtensions[0]}`, 'childrenity']])],
             ])
         );
     });
@@ -208,7 +188,7 @@ describe('Filesystem formatter', () => {
         assert.deepEqual(
             filesystem({
                 invalidFilenameCharReplacement: '-',
-                fileHeader: title => `# ${title}\n\n`,
+                header: title => `# ${title}\n\n`,
             }).emit({
                 format: testFormat,
                 root: {
@@ -217,6 +197,44 @@ describe('Filesystem formatter', () => {
                 },
             }),
             new Map([[`e-mp--y.${testFormat.fileExtensions[0]}`, '# e/mp//y\n\nhello']])
+        );
+    });
+
+    it('emits a directory of files with a custom header and filename', () => {
+        assert.deepEqual(
+            filesystem({
+                header: (title, index) => `${index}:` + (title === undefined ? '' : `${title}:`),
+                filename: (title, index) => `${index}.${title}`,
+            }).emit({
+                format: testFormat,
+                root: {
+                    children: {
+                        ordered: true,
+                        items: [
+                            {
+                                content: 'hello0',
+                            },
+                            {
+                                title: 'hi',
+                                content: 'hello1',
+                            },
+                            {
+                                content: 'hello2',
+                            },
+                        ],
+                    },
+                },
+            }),
+            new Map([
+                [
+                    `.`,
+                    new Map([
+                        [`1.${testFormat.fileExtensions[0]}`, '1:hello0'],
+                        [`2.hi.${testFormat.fileExtensions[0]}`, '2:hi:hello1'],
+                        [`3.${testFormat.fileExtensions[0]}`, '3:hello2'],
+                    ]),
+                ],
+            ])
         );
     });
 });
