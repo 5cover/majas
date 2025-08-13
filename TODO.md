@@ -10,3 +10,5 @@
 - [ ] publish
 - [x] filesystem: option for invalid character replacement
 - [x] filesystem: option to add heading to the generated file based on hierarchy (like a markdown heading)
+- [ ] markdown to fs: option for relative headings
+- [ ] fs: option for trailing newline
