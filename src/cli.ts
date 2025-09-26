@@ -10,7 +10,7 @@ const program = baseProgram
     .name('majas')
     .description('Markdown And JSON Are Similar - format-agnostic structured data converter')
     .version(pkg.version)
-    .option('-4, --from <format>', 'Source format')
+    .option('-4, --from <format>', 'Source format. If absent, Majas infers the source format.')
     .option(
         '-2, --to <format>',
         'Target format. If absent, Majas simply outputs the resolved input format and no conversion is performed.'
@@ -41,7 +41,7 @@ if (o.help !== undefined) {
 }
 
 const sourceFormat = ((): Format => {
-    if (o.infer) {
+    if (o.infer || o.from === undefined) {
         let inferred = map(inferFormat, program.args[0]);
         if (!inferred && o.from !== undefined) {
             console.log('fallback to --from');
@@ -50,14 +50,14 @@ const sourceFormat = ((): Format => {
         return (
             inferred ??
             program.error(
-                'could not infer input format' + (program.args[0] ? ` for ${program.args[0]}` : '')
+                o.from === undefined
+                    ? 'missing --from option'
+                    : 'could not infer input format' +
+                          (program.args[0] ? ` for ${program.args[0]}` : '')
             )
         );
     }
-    return (
-        map(findFormat, o.from ?? program.error(`missing --from option`)) ??
-        program.error(`invalid format: ${o.from}`)
-    );
+    return map(findFormat, o.from) ?? program.error(`invalid format: ${o.from}`);
 })();
 
 if (o.to === undefined) {
