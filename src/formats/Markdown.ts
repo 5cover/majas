@@ -2,25 +2,25 @@ import type * as md from 'mdast';
 import type IRNode from '../core/IRNode.js';
 import type Document from '../core/Document.js';
 import { fromMarkdown } from 'mdast-util-from-markdown';
-import { throwf } from '../util/misc.js';
+import { normalizePartial, throwf } from '../util/misc.js';
 import { FormatterBase } from '../core/Formatter.js';
 import type { Format } from '../core/Format.js';
 
 export const HeadingDepths = [1, 2, 3, 4, 5, 6] as const satisfies md.Heading['depth'][];
 
-export const DefaultOptions = {
-    depth: 6,
-} as const satisfies Options;
-
 export interface Options {
     depth: md.Heading['depth'];
 }
+
+export const DefaultOptions = {
+    depth: 6,
+} as const satisfies Options;
 
 export default class Markdown extends FormatterBase<string> {
     private readonly options: Readonly<Options>;
     constructor(format: Format, options?: Partial<Readonly<Options>>) {
         super(format);
-        this.options = { ...DefaultOptions, ...options };
+        this.options = normalizePartial<Options>(DefaultOptions, options);
     }
     private input!: string;
     protected override parseImpl(input: string): IRNode {
@@ -28,7 +28,7 @@ export default class Markdown extends FormatterBase<string> {
         const root = fromMarkdown(input);
         return this.md2ir(root);
     }
-    override emit(output: Document): string {
+    override emit(_output: Document): string {
         return 'todo';
     }
 

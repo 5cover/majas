@@ -93,3 +93,15 @@ export function findFormat(name: string): Format | undefined {
     }
     return undefined;
 }
+
+export function normalizePartial<T>(defaults: Readonly<T>, config?: Readonly<Partial<T>>): T {
+    const result: T = { ...defaults };
+    if (config) {
+        for (const [k, v] of Object.entries(config)) {
+            if (v !== undefined) {
+                result[k as keyof T] = v as T[keyof T];
+            }
+        }
+    }
+    return result;
+}

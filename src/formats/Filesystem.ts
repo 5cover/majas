@@ -5,7 +5,7 @@ import { FormatterBase } from '../core/Formatter.js';
 import type IRNode from '../core/IRNode.js';
 import { type FSTree } from '../fstree.js';
 import { uniqify } from '../util/string.js';
-import { map } from '../util/misc.js';
+import { map, normalizePartial } from '../util/misc.js';
 
 export interface FSTreeNode {
     title: string;
@@ -40,9 +40,9 @@ export const DefaultOptions = {
 
 export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
     private readonly options: Readonly<Options>;
-    constructor(format: Format, options?: Partial<Readonly<Options>>) {
+    constructor(format: Format, options?: Readonly<Partial<Options>>) {
         super(format);
-        this.options = { ...DefaultOptions, ...options };
+        this.options = normalizePartial(DefaultOptions, options);
     }
     protected override parseImpl(input: FSTreeNode): IRNode {
         if (typeof input.children === 'string') {

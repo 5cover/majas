@@ -1,4 +1,4 @@
-// CLI interface entry
+#!/usr/bin/env node
 import { program as baseProgram } from '@commander-js/extra-typings';
 import pkg from '../package.json' with { type: 'json' };
 import type { Format } from './core/Format.js';
