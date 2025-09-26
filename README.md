@@ -113,6 +113,11 @@ XML
 
 ## Changelog
 
+### 1.1.1
+
+- `--infer` is now implicit when `--from` is not present
+- Fixed errors related to the handling of missing config values
+
 ### 1.1.0
 
 - Moved @types/fs-extra from dependencies to devDependencies
