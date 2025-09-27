@@ -31,7 +31,7 @@ npx majas ...
 
 ## Usage
 
-<code>majas [-i] [-4 *from*] [-2 *to*] [-o *output*] [-i*option*...] [-o*option*] [FILE]</code>
+<code>majas [-i] [-4 _from_] [-2 _to_] [-o _output_] [-i_option_...] [-o_option_] [FILE]</code>
 
 If no input file is provided, data is read from **stdin**.
 
