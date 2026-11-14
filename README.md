@@ -136,6 +136,15 @@ const markdown = emitMarkdown(fromFiles)
 
 ## Changelog
 
+### 2.0.0
+
+- Changed the filesystem layout to support Markdown split-and-rebuild conversions without a manifest. The input directory is now a container, root content uses `content.md` by default, and sections with children use directories with their own content files. Heading-only content files are omitted when the heading can be recovered from the directory name and nesting.
+- Preserved original Markdown heading source in the IR and section files so reconstruction retains heading depths and inline structure. The in-memory filesystem parsing API now accepts format options.
+- Added symmetric filesystem ordering modes: `check` validates the existing order by default, `nums` preserves order using numeric prefixes, and `ignore` skips order preservation. Ordering errors identify the conflicting sections and their directory.
+- Added configurable content filenames and symmetric custom headers. Filesystem input detects a single `content` file regardless of extension by default and reports ambiguous matches.
+- Changed default validation to reject unsafe names, collisions, and missing or mismatched section headings. Markdown title policies allow filename-authoritative or heading-authoritative reconstruction when needed.
+- Added end-to-end Markdown syntax tree round-trip tests and documented which options can prevent round-tripping.
+
 ### 1.2.0
 
 - Implemented Markdown output, including heading rebasing for filesystem content and configurable filename and heading title policies.
