@@ -132,6 +132,14 @@ const markdown = emitMarkdown(fromFiles, { title: 'filename' })
 
 ## Changelog
 
+### 1.2.0
+
+- Implemented Markdown output, including heading rebasing for filesystem content and configurable filename and heading title policies.
+- Added opt-in accessible HTML headings beyond level six and parsing of the generated HTML heading form.
+- Added filesystem output options for relative Markdown headings and trailing newlines.
+- Added an in-memory conversion API with TypeScript declarations for Markdown, IR JSON, and filesystem trees.
+- Fixed filesystem path input handling and declared missing ESLint configuration dependencies.
+
 ### 1.1.4
 
 - Fixed @commander-js/extra-typings incorrectly being a devDependency
