@@ -58,6 +58,22 @@ describe('Filesystem formatter', () => {
     assert.equal(parseFilesystem({ title: 'dir', children: tree }, { order: 'ignore' }).root.children?.ordered, false)
   })
 
+  it('reports each adjacent ordering conflict and its containing directory', () => {
+    const document = parseIR(
+      '{"children":{"ordered":true,"items":[{"title":"Parent","children":{"ordered":true,"items":[{"title":"Z","content":"z"},{"title":"B","content":"b"},{"title":"A","content":"a"}]}}]}}'
+    )
+    assert.throws(
+      () => emitFilesystem(document),
+      (error: unknown) => {
+        assert.ok(error instanceof Error)
+        assert.match(error.message, /in "Parent"/)
+        assert.match(error.message, /"Z" \("Z.txt"\) before "B" \("B.txt"\)/)
+        assert.match(error.message, /"B" \("B.txt"\) before "A" \("A.txt"\)/)
+        return true
+      }
+    )
+  })
+
   it('requires numeric prefixes of consistent width and detects duplicates', () => {
     for (const tree of [
       new Map([['A.md', 'a']]),

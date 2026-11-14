@@ -123,7 +123,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
       if (this.options.trailingNewline && !result.endsWith('\n')) result += '\n'
       return result
     }
-    const entries = (node: IRNode, index?: number, root = false): Map<string, FSTree> => {
+    const entries = (node: IRNode, index?: number, root = false, location = '.'): Map<string, FSTree> => {
       const result = new Map<string, FSTree>()
       if (node.content !== undefined || (!root && node.headingSource !== undefined))
         result.set(contentName, formatContent(node, index))
@@ -151,16 +151,29 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
         used.add(logical)
         return name
       })
-      if (
-        this.options.order === 'check' &&
-        node.children?.ordered &&
-        names.some((name, i) => i > 0 && compare(names[i - 1], name) >= 0)
-      )
-        throw new Error('Section order differs from filesystem order; use order=nums or order=ignore')
+      if (this.options.order === 'check' && node.children?.ordered) {
+        const conflicts: string[] = []
+        for (let i = 1; i < names.length; i++) {
+          if (compare(names[i - 1], names[i]) >= 0) {
+            conflicts.push(
+              `${JSON.stringify(children[i - 1].title ?? String(i))} (${JSON.stringify(names[i - 1])}) before ${JSON.stringify(children[i].title ?? String(i + 1))} (${JSON.stringify(names[i])})`
+            )
+          }
+        }
+        if (conflicts.length)
+          throw new Error(
+            `Section order differs from filesystem order in ${JSON.stringify(location)}: ${conflicts.join('; ')}; rename or reorder these sections, or use --out-order nums or --out-order ignore`
+          )
+      }
       children.forEach((child, i) => {
         const name = names[i]
         if (result.has(name)) throw new Error(`Filesystem name collision: ${name}`)
-        result.set(name, child.children?.items.length ? entries(child, i + 1) : formatContent(child, i + 1))
+        result.set(
+          name,
+          child.children?.items.length
+            ? entries(child, i + 1, false, location === '.' ? name : `${location}/${name}`)
+            : formatContent(child, i + 1)
+        )
       })
       return result
     }
