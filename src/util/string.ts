@@ -5,10 +5,10 @@
  * @returns The individual or it modified as little as possible to be unique from crowd in an implementation-defined manner.
  */
 export function uniqify(individual: string, inCrowd: (candidate: string) => boolean) {
-    let n = 1;
-    let modividual = individual;
-    while (inCrowd(modividual)) {
-        modividual = `${individual} (${n++})`;
-    }
-    return modividual;
+  let n = 1
+  let modividual = individual
+  while (inCrowd(modividual)) {
+    modividual = `${individual} (${n++})`
+  }
+  return modividual
 }

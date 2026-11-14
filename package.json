@@ -81,5 +81,14 @@
     "**/*.{ts,js,json,md}": [
       "prettier --write"
     ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true,
+    "arrowParens": "avoid",
+    "bracketSameLine": true,
+    "trailingComma": "es5"
   }
 }

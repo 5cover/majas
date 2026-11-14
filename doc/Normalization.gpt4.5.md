@@ -10,14 +10,14 @@ Here's the simplified structure of an IRNode:
 
 ```typescript
 interface IRNode {
-  title?: string; // Optional, absent <=> undefined
-  content?: string; // Optional, absent <=> undefined
-  children?: OrderableArray; // Optional, absent <=> empty children
+  title?: string // Optional, absent <=> undefined
+  content?: string // Optional, absent <=> undefined
+  children?: OrderableArray // Optional, absent <=> empty children
 }
 
 interface OrderableArray {
-  ordered: boolean; // True if child order is semantically meaningful
-  items: IRNode[];
+  ordered: boolean // True if child order is semantically meaningful
+  items: IRNode[]
 }
 ```
 
@@ -33,9 +33,9 @@ But subtlety arises:
 - Two nodes (`a` and `b`) with identical semantic meaning might fail strict equality checks (`a !== b`) because one explicitly includes `title: undefined`, and the other omits the title entirely.
 
 ```typescript
-const nodeA = { content: 'hello' };
-const nodeB = { content: 'hello', title: undefined };
-console.log(nodeA === nodeB); // false
+const nodeA = { content: 'hello' }
+const nodeB = { content: 'hello', title: undefined }
+console.log(nodeA === nodeB) // false
 ```
 
 This subtlety leaks into testing and formatting logic, causing headaches:
@@ -60,9 +60,9 @@ This ensures purity and semantic clarity:
 
 ```typescript
 interface IRNodeRigid {
-  title: string | undefined;
-  content: string | undefined;
-  children: OrderableArray; // Always initialized
+  title: string | undefined
+  content: string | undefined
+  children: OrderableArray // Always initialized
 }
 ```
 
@@ -83,18 +83,18 @@ Allow flexible IRNode creation with absent properties or undefined placeholders,
 
 ```typescript
 interface IRNodeLoose {
-  title?: string;
-  content?: string;
-  children?: OrderableArray;
+  title?: string
+  content?: string
+  children?: OrderableArray
 }
 
 // Normalization helper
 function normalize(node: IRNodeLoose): IRNodeLoose {
-  if (node.title === undefined) delete node.title;
-  if (node.content === undefined) delete node.content;
-  if (!node.children || node.children.items.length === 0) delete node.children;
-  else node.children.items.forEach(normalize);
-  return node;
+  if (node.title === undefined) delete node.title
+  if (node.content === undefined) delete node.content
+  if (!node.children || node.children.items.length === 0) delete node.children
+  else node.children.items.forEach(normalize)
+  return node
 }
 ```
 
@@ -141,7 +141,7 @@ assert.deepEqual(
     content: 'normalized!',
     children: { ordered: true, items: [{ content: 'child' }] },
   })
-);
+)
 ```
 
 ## Conclusions & Broader Reflections
