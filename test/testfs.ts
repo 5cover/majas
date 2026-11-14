@@ -18,7 +18,9 @@ Object.defineProperty(mfs.fs.realpathSync, 'native', {
 
 test.mock.module('fs', {
     cache: true,
-    defaultExport: mfs.fs,
+    // graceful-fs copies property descriptors without symbols. Materialize the
+    // memfs stream accessors so its clone does not lose their backing symbol.
+    defaultExport: { ...mfs.fs },
 });
 
 export const fs = ((await import('fs-extra')) as unknown as { default: typeof import('fs-extra') })
