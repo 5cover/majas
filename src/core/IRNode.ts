@@ -16,6 +16,8 @@ export default interface IRNode {
    */
   title?: string
 
+  headingSource?: string
+
   /**
      * Optional content of the node as a string.
      *
@@ -63,6 +65,9 @@ export const IRNodeSchema = {
   additionalProperties: false,
   properties: {
     title: {
+      type: 'string',
+    },
+    headingSource: {
       type: 'string',
     },
     content: {

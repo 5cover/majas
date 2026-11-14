@@ -32,8 +32,8 @@ export function emitIR(document: Document, space?: string | number): string {
   return new IR(formats[0], space).emit(document)
 }
 
-export function parseFilesystem(input: FSTreeNode): Document {
-  return new Filesystem(formats[2]).parse(input)
+export function parseFilesystem(input: FSTreeNode, options?: Partial<FilesystemOptions>): Document {
+  return new Filesystem(formats[2], options).parse(input)
 }
 
 export function emitFilesystem(document: Document, options?: Partial<FilesystemOptions>): FSTree {

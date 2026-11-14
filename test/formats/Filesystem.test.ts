@@ -1,240 +1,121 @@
 import { describe, it } from 'node:test'
-import formats from '../../src/core/formats.js'
 import assert from 'node:assert/strict'
-import Filesystem, { type Options } from '../../src/formats/Filesystem.js'
-import type { FSTree } from '../../src/fstree.js'
-
-function filesystem(options?: Readonly<Partial<Options>>) {
-  return new Filesystem(formats[2], options)
-}
-
-const testFormat = formats[1]
+import { emitFilesystem, parseFilesystem, parseIR } from '../../src/index.js'
+import type { FSTree } from '../../src/index.js'
 
 describe('Filesystem formatter', () => {
-  it('emits an anonymous empty node', () => {
+  it('places root content and children together', () => {
+    const document = parseIR(
+      '{"content":"intro","children":{"ordered":true,"items":[{"title":"A","content":"a"},{"title":"B","content":"b"}]}}'
+    )
     assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {},
-      }),
-      new Map([['.', new Map()]])
+      emitFilesystem(document),
+      new Map([
+        ['content.txt', 'intro'],
+        ['A.txt', 'a'],
+        ['B.txt', 'b'],
+      ])
     )
   })
-  it('emits a named empty node', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          title: 'empty',
-        },
-      }),
-      new Map([['empty', new Map()]])
+
+  it('uses a content file inside a section with children', () => {
+    const document = parseIR(
+      '{"children":{"ordered":true,"items":[{"title":"A","content":"a","children":{"ordered":true,"items":[{"title":"B","content":"b"}]}}]}}'
     )
-  })
-  it('emits an anonymous content node', () => {
     assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          content: 'hello',
-        },
-      }),
-      new Map([[`out.${testFormat.fileExtensions[0]}`, 'hello']])
-    )
-  })
-  it('emits a named content node', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          title: 'file',
-          content: 'hello',
-        },
-      }),
-      new Map([[`file.${testFormat.fileExtensions[0]}`, 'hello']])
-    )
-  })
-  it('emits an empty anonymous directory', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          children: {
-            ordered: true,
-            items: [],
-          },
-        },
-      }),
-      new Map([['.', new Map()]])
-    )
-  })
-  it('emits an empty named directory', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          title: 'dir',
-          children: {
-            ordered: true,
-            items: [],
-          },
-        },
-      }),
-      new Map([[`dir`, new Map()]])
-    )
-  })
-  it('emits a directory with one named file', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          children: {
-            ordered: true,
-            items: [
-              {
-                title: 'file',
-                content: 'hello',
-              },
-            ],
-          },
-        },
-      }),
-      new Map([[`.`, new Map([[`file.${testFormat.fileExtensions[0]}`, 'hello']])]])
-    )
-  })
-  it('emits a directory of unnamed files', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          children: {
-            ordered: true,
-            items: [
-              {
-                content: 'hello0',
-              },
-              {
-                content: 'hello1',
-              },
-              {
-                content: 'hello2',
-              },
-            ],
-          },
-        },
-      }),
+      emitFilesystem(document),
       new Map([
         [
-          `.`,
+          'A',
           new Map([
-            [`1.${testFormat.fileExtensions[0]}`, 'hello0'],
-            [`2.${testFormat.fileExtensions[0]}`, 'hello1'],
-            [`3.${testFormat.fileExtensions[0]}`, 'hello2'],
+            ['content.txt', 'a'],
+            ['B.txt', 'b'],
           ]),
         ],
       ])
     )
   })
-  it('emits content and directory', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          content: 'contentfulness',
-          children: {
-            ordered: true,
-            items: [
-              {
-                content: 'childrenity',
-              },
-            ],
-          },
-        },
-      }),
-      new Map<string, FSTree>([
-        [`out.${testFormat.fileExtensions[0]}`, 'contentfulness'],
-        ['.', new Map([[`1.${testFormat.fileExtensions[0]}`, 'childrenity']])],
-      ])
-    )
-  })
 
-  it('emits a named empty node with illegal filename characters', () => {
-    assert.deepEqual(
-      filesystem().emit({
-        format: testFormat,
-        root: {
-          title: 'em/pty',
-        },
-      }),
-      new Map([['empty', new Map()]])
+  it('checks ordering and can encode numeric prefixes', () => {
+    const document = parseIR(
+      '{"children":{"ordered":true,"items":[{"title":"Z","content":"z"},{"title":"A","content":"a"}]}}'
     )
-  })
-
-  it('emits a named empty node with illegal filename characters and replaces them', () => {
+    assert.throws(() => emitFilesystem(document), /order differs/)
+    const tree = emitFilesystem(document, { order: 'nums' })
     assert.deepEqual(
-      filesystem({
-        invalidFilenameCharReplacement: '_',
-      }).emit({
-        format: testFormat,
-        root: {
-          title: 'em/pty',
-        },
-      }),
-      new Map([['em_pty', new Map()]])
-    )
-  })
-
-  it('emits a named content with illegal filename characters with replacement and custom header', () => {
-    assert.deepEqual(
-      filesystem({
-        invalidFilenameCharReplacement: '-',
-        header: title => `# ${title}\n\n`,
-      }).emit({
-        format: testFormat,
-        root: {
-          title: 'e/mp//y',
-          content: 'hello',
-        },
-      }),
-      new Map([[`e-mp--y.${testFormat.fileExtensions[0]}`, '# e/mp//y\n\nhello']])
-    )
-  })
-
-  it('emits a directory of files with a custom header and filename', () => {
-    assert.deepEqual(
-      filesystem({
-        header: (title, index) => `${index}:` + (title === undefined ? '' : `${title}:`),
-        filename: (title, index) => `${index}.${title}`,
-      }).emit({
-        format: testFormat,
-        root: {
-          children: {
-            ordered: true,
-            items: [
-              {
-                content: 'hello0',
-              },
-              {
-                title: 'hi',
-                content: 'hello1',
-              },
-              {
-                content: 'hello2',
-              },
-            ],
-          },
-        },
-      }),
+      tree,
       new Map([
-        [
-          `.`,
-          new Map([
-            [`1.${testFormat.fileExtensions[0]}`, '1:hello0'],
-            [`2.hi.${testFormat.fileExtensions[0]}`, '2:hi:hello1'],
-            [`3.${testFormat.fileExtensions[0]}`, '3:hello2'],
-          ]),
-        ],
+        ['1 Z.txt', 'z'],
+        ['2 A.txt', 'a'],
       ])
     )
+    const parsed = parseFilesystem({ title: 'dir', children: tree }, { order: 'nums' })
+    assert.deepEqual(
+      parsed.root.children?.items.map(node => node.title),
+      ['Z', 'A']
+    )
+    assert.equal(parsed.root.children?.ordered, true)
+    assert.equal(parseFilesystem({ title: 'dir', children: tree }, { order: 'ignore' }).root.children?.ordered, false)
+  })
+
+  it('requires numeric prefixes of consistent width and detects duplicates', () => {
+    for (const tree of [
+      new Map([['A.md', 'a']]),
+      new Map([
+        ['1 A.md', 'a'],
+        ['02 B.md', 'b'],
+      ]),
+      new Map([
+        ['1 A.md', 'a'],
+        ['1 B.md', 'b'],
+      ]),
+    ]) {
+      assert.throws(() => parseFilesystem({ title: 'dir', children: tree }, { order: 'nums' }))
+    }
+  })
+
+  it('uses the minimum numeric width for each sibling group', () => {
+    const items = Array.from({ length: 10 }, (_, i) => ({ title: `Section ${i}`, content: 'x' }))
+    const tree = emitFilesystem(parseIR(JSON.stringify({ children: { ordered: true, items } })), {
+      order: 'nums',
+    }) as Map<string, FSTree>
+    assert.ok(tree.has('01 Section 0.txt'))
+    assert.ok(tree.has('10 Section 9.txt'))
+    assert.equal(parseFilesystem({ title: 'dir', children: tree }, { order: 'nums' }).root.children?.items.length, 10)
+  })
+
+  it('detects content ambiguity and permits an explicit content filename', () => {
+    const tree = new Map([
+      ['content.md', 'a'],
+      ['content.txt', 'b'],
+    ])
+    assert.throws(() => parseFilesystem({ title: 'dir', children: tree }))
+    const parsed = parseFilesystem({ title: 'dir', children: tree }, { contentFilename: 'content.md' })
+    assert.equal(parsed.root.content, 'a')
+    assert.equal(parsed.root.children?.items[0].title, 'content')
+  })
+
+  it('rejects unsafe names, reserved content names, and collisions', () => {
+    for (const title of ['bad/name', 'content']) {
+      const document = parseIR(JSON.stringify({ children: { ordered: true, items: [{ title, content: 'x' }] } }))
+      assert.throws(() => emitFilesystem(document))
+    }
+    const document = parseIR(
+      '{"children":{"ordered":true,"items":[{"title":"A","content":"x"},{"title":"A","content":"y"}]}}'
+    )
+    assert.throws(() => emitFilesystem(document), /collision/)
+  })
+
+  it('strips a symmetric custom header and ensures final newlines', () => {
+    const document = parseIR('{"children":{"ordered":true,"items":[{"title":"A","content":"a"}]}}')
+    const options = { header: (title: string | undefined) => `${title}:`, trailingNewline: true }
+    const tree = emitFilesystem(document, options)
+    assert.deepEqual(tree, new Map([['A.txt', 'A:a\n']]))
+    assert.equal(parseFilesystem({ title: 'dir', children: tree }, options).root.children?.items[0].content, 'a\n')
+  })
+
+  it('rejects a missing configured header', () => {
+    const tree: FSTree = new Map([['A.txt', 'body']])
+    assert.throws(() => parseFilesystem({ title: 'dir', children: tree }, { header: () => 'header' }))
   })
 })

@@ -41,22 +41,31 @@ export default class Markdown extends FormatterBase<string> {
       let title = node.title
       let content = node.content
       if (filesystem && title !== undefined) title = title.replace(/^.*[\\/]/, '')
-      if (filesystem && content !== undefined && title !== undefined) {
-        title = title.replace(/\.(?:md|markdown|mdown|mkdn|mkd|mdwn|mkdown|ron)$/i, '')
-        const parsed = fromMarkdown(content)
-        const first = parsed.children[0]
-        if (first && isHeading(first) && first.depth === 1) {
-          const heading = headingTitle(content, first)
-          if (this.options.title === 'match' && heading !== title)
-            throw new Error(`File title does not match its H1: ${title} / ${heading}`)
-          if (this.options.title === 'heading') title = heading
-          content = content
-            .slice(first.position?.end.offset ?? throwf(new Error('missing heading end offset')))
-            .trimStart()
+      let sourceHeading: string | undefined = node.headingSource
+      if (filesystem && title !== undefined) {
+        if (content === undefined) {
+          if (this.options.title !== 'filename') throw new Error(`Missing section heading: ${title}`)
+        } else {
+          const parsed = fromMarkdown(content)
+          const first = parsed.children[0]
+          const htmlHeading = first?.type === 'html' && this.options.html ? parseHtmlHeading(first.value) : undefined
+          if (first && (isHeading(first) || htmlHeading)) {
+            const heading = isHeading(first) ? headingTitle(content, first) : htmlHeading!.title
+            if (this.options.title === 'match' && heading !== title)
+              throw new Error(`File title does not match its heading: ${title} / ${heading}`)
+            if (this.options.title === 'heading') title = heading
+            if (this.options.title !== 'filename')
+              sourceHeading = content.slice(first.position?.start.offset, first.position?.end.offset)
+            content = content
+              .slice(first.position?.end.offset ?? throwf(new Error('missing heading end offset')))
+              .trimStart()
+          } else if (this.options.title !== 'filename') {
+            throw new Error(`Missing section heading: ${title}`)
+          }
+          if (!sourceHeading) content = rebaseHeadings(content, depth + 1, this.options.html)
         }
-        content = rebaseHeadings(content, depth + 1, this.options.html)
       }
-      if (title !== undefined) sections.push(renderHeading(title, depth, this.options.html))
+      if (title !== undefined) sections.push(sourceHeading ?? renderHeading(title, depth, this.options.html))
       else if (!root) throw new Error('Cannot emit an untitled non-root node as Markdown')
       if (content) sections.push(content)
       const childDepth = title === undefined ? depth : depth + 1
@@ -96,6 +105,10 @@ export default class Markdown extends FormatterBase<string> {
         (lastHeading = {
           // Get raw child source
           title: heading.title,
+          headingSource: this.input.substring(
+            n.position?.start.offset ?? throwf(new Error('missing node start offset')),
+            n.position?.end.offset ?? throwf(new Error('missing node end offset'))
+          ),
           children: { ordered: true, items: newScope },
         })
       )
@@ -120,6 +133,16 @@ export default class Markdown extends FormatterBase<string> {
         )
       : ''
   }
+}
+
+export function serializeSection(node: IRNode, relativeHeadings: boolean): string {
+  const heading =
+    relativeHeadings && node.title !== undefined ? renderHeading(node.title, 1, false) : node.headingSource
+  const content =
+    relativeHeadings && node.content !== undefined
+      ? rebaseHeadings(node.content, heading === undefined ? 1 : 2)
+      : node.content
+  return [heading, content].filter((part): part is string => part !== undefined).join('\n\n')
 }
 
 function isHeading(node: md.Node): node is md.Heading {

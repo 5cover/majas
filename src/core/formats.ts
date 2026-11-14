@@ -59,7 +59,8 @@ const optionSchemas = {
     },
     title: {
       enum: ['match', 'filename', 'heading'],
-      description: 'Choose the filesystem filename or leading H1 as title, or require a match.',
+      description:
+        'Choose the filesystem filename or stored heading as title, or require a match. Filename mode and renamed paths may not round-trip.',
       default: 'match',
     },
     depth: {
@@ -71,35 +72,53 @@ const optionSchemas = {
   },
   fs: {
     encoding,
+    order: {
+      enum: ['check', 'nums', 'ignore'],
+      default: 'check',
+      description:
+        'Order sections: check lexicographic order, add numeric prefixes, or ignore order (not roundtrippable).',
+    },
+    content: {
+      type: 'string',
+      description:
+        'Full content filename for input and output; input otherwise detects a single content file with any extension.',
+    },
     relative: {
       type: 'boolean',
-      description: 'Emit titled files with an H1 and rebase contained headings.',
+      description:
+        'Emit titled files with an H1 and rebase contained headings (not roundtrippable for original heading depths).',
       default: false,
     },
-    newline: { type: 'boolean', description: 'Ensure emitted files end with a newline.', default: false },
+    newline: {
+      type: 'boolean',
+      description: 'Ensure emitted files end with a newline (may change content).',
+      default: false,
+    },
     basedir: {
       type: 'string',
-      description: 'Base dirname to place the root node children in. May be a path.',
+      description:
+        'Wrap the emitted filesystem tree in this directory; non-default values are not automatically reversed.',
       default: Filesystem.DefaultOptions.baseDirname,
     },
     basefile: {
       type: 'string',
-      description: 'Base filename to place root node content in. May be a path. Extension not included.',
+      description: 'Content file basename. Extension not included; use content for an explicit filename.',
       default: Filesystem.DefaultOptions.baseFilename,
     },
     replace: {
       type: 'string',
-      description: 'String to replace invalid filename characters in node titles with.',
+      description:
+        'String to replace invalid filename characters. Requires Markdown heading title policy to recover original titles.',
     },
     header: {
       type: 'string',
       description:
-        'squrly-format replacement pattern for file headers. {title} is replaced by the node title. {index} is replaced by the node index. {n} is replaced by a newline.',
+        'Symmetric squrly-format prefix for file headers. {title} is the node title, {index} its index and {n} a newline. Renamed titles can prevent reversal.',
     },
     filename: {
       type: 'string',
       description:
-        'squrly-format replacement pattern for file names. {title} is replaced by the node title. {index} is replaced by the node index. {n} is replaced by a newline.',
+        'squrly-format replacement pattern for file names. Renaming may require Markdown heading title policy to recover titles.',
     },
   },
 } as const satisfies Record<string, Schema>
@@ -132,6 +151,7 @@ export default [
     optionsSchema: optionSchemas.md,
     accepts: 'markdown markup text',
     emits: 'markdown markup text',
+    serializeSection: Markdown.serializeSection,
     create(options) {
       const o = parseOptions(options, optionSchemas.md)
       const mdFormatter = new Markdown.default(this, o)
@@ -157,6 +177,8 @@ export default [
       const fsFormatter = new Filesystem.default(this, {
         baseDirname: o.basedir,
         baseFilename: o.basefile,
+        contentFilename: o.content,
+        order: o.order,
         relativeHeadings: o.relative,
         trailingNewline: o.newline,
         invalidFilenameCharReplacement: o.replace,

@@ -1,6 +1,7 @@
 import type { JSONSchema } from 'json-schema-to-ts'
 import type { Raw } from './Formatter.js'
 import type Document from './Document.js'
+import type IRNode from './IRNode.js'
 
 export type Options = Partial<Record<string, string | number | true>>
 
@@ -14,6 +15,7 @@ export interface Format {
   optionsSchema: OptionsSchema
   accepts: string
   emits: string
+  serializeSection?: (node: IRNode, relativeHeadings: boolean) => string
   create(options: Readonly<Options>): Pipeline
 }
 

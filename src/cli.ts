@@ -64,10 +64,13 @@ if (o.to === undefined) {
 }
 
 function formatsHelp() {
-  return `\nFormats:
+  return (
+    `\nFormats:
   ${formats.map(f => [f.displayName, ...f.aliases].join(', ')).join('\n  ')}
 
-Note: format names are case-insensitive.\n`
+Note: format names are case-insensitive.\n` +
+    `\nRound-tripping: use matching filesystem input and output options. The default order checks lexicographic order; use order=nums to preserve other orders. order=ignore and lossy naming, header, or relative-heading options may not round-trip.\n`
+  )
 }
 
 function formatHelp(format: Format) {

@@ -109,8 +109,12 @@ XML
 
 - Currently implemented formats are IR JSON (`ir`), Markdown (`md`), and filesystem trees (`fs`). The JSON and XML examples above describe intended future formats; `ir` accepts the IR node JSON structure.
 - Markdown output rejects untitled non-root nodes and headings deeper than level six. Use `--out-html` to render deeper headings as accessible HTML; use `--in-html` to parse the exact generated HTML heading form back into the hierarchy. HTML heading parsing is disabled by default and is also disabled when `--in-depth` is less than six.
-- Filesystem-to-Markdown conversion rebases headings in file contents under the file's generated heading. A leading H1 must match the filename without a recognized Markdown extension by default. Use `--out-title filename` or `--out-title heading` to select either title instead; a missing H1 always falls back to the filename.
-- Use `--out-relative` for Markdown-to-filesystem output to give titled files an H1 and rebase their contained headings. This cannot be combined with `--out-header`. Use `--out-newline` to ensure output files end in a newline.
+- Markdown-to-filesystem conversion stores root content in `content.md`. A section with children has a directory containing `content.md`; a leaf is a file. Section content includes its original heading, and the input directory itself is not a heading when rebuilding.
+- By default filesystem output checks that ordered siblings already sort by Unicode code point. Use `--out-order nums` when splitting and `--in-order nums` when rebuilding to preserve other orders with numeric prefixes. `order ignore` does not preserve order. With `check` or `ignore`, numeric-looking names are not interpreted.
+- Filesystem input detects a single file with basename `content` in each directory, regardless of extension. Multiple matches are an error. Set the same full filename using `--out-content` and `--in-content` to override this rule. Output otherwise uses the source format's native extension, or `.txt` if it has none.
+- Markdown rebuilding requires each section file's leading heading to match its path by default. Use `--out-title heading` to trust the stored heading after an explicit filename transformation, or `--out-title filename` to accept ordinary files without headings. Unsafe names and collisions are errors by default.
+- Use `--out-relative` to rebase generated section files to H1; this changes original heading depths and cannot be combined with `--out-header`. A custom header must be supplied symmetrically as `--out-header` and `--in-header` to be stripped when rebuilding. Use `--out-newline` to ensure output files end in a newline; it can change content.
+- With matching reversible options, Markdown splitting and rebuilding preserves the Markdown syntax tree, excluding source positions and formatting-only differences. Lossy filename transformations, custom headers that cannot be reconstructed, `order ignore`, relative headings, and newline changes can prevent this guarantee.
 - Majas is **format-agnostic**, **language-agnostic**, and sometimes even **logic-agnostic**.
 - It doesn't care what you're doing. But it _knows_ all data is a tree.
 - Be careful: using `majas` means accepting the truth of its name.
@@ -123,9 +127,9 @@ The in-memory API separates conversion from I/O. Filesystem trees are strings fo
 import { emitFilesystem, emitMarkdown, parseFilesystem, parseMarkdown } from 'majas'
 
 const document = parseMarkdown('# Notes\n\nHello')
-const files = emitFilesystem(document, { relativeHeadings: true, trailingNewline: true })
-const fromFiles = parseFilesystem({ title: 'docs', children: files })
-const markdown = emitMarkdown(fromFiles, { title: 'filename' })
+const files = emitFilesystem(document, { order: 'nums' })
+const fromFiles = parseFilesystem({ title: 'docs', children: files }, { order: 'nums' })
+const markdown = emitMarkdown(fromFiles)
 ```
 
 `parseIR` and `emitIR` handle the JSON IR format. `emitMarkdown` accepts `html` and `title` options; `parseMarkdown` accepts `depth` and `html`. All functions operate on values, without reading or writing files.
