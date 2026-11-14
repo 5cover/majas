@@ -113,6 +113,10 @@ XML
 
 ## Changelog
 
+### 1.1.2
+
+- Fixed @commander-js/extra-typings incorrectly being a devDependency
+
 ### 1.1.1
 
 - `--infer` is now implicit when `--from` is not present
