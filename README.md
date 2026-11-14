@@ -144,7 +144,7 @@ const markdown = emitMarkdown(fromFiles)
 - Preserved original Markdown heading source in the IR and section files so reconstruction retains heading depths and inline structure. The in-memory filesystem parsing API now accepts format options.
 - Added symmetric filesystem ordering modes: `check` validates the existing order by default, `nums` preserves order using numeric prefixes, and `ignore` skips order preservation. Ordering errors identify the conflicting sections and their directory.
 - Added configurable content filenames and symmetric custom headers. Filesystem input detects a single `content` file regardless of extension by default and reports ambiguous matches.
-- Added a global output newline policy: CLI text and generated files end in a newline by default, with `-n` to suppress adding one. Filesystem `--in-newline` optionally removes one input line ending.
+- Added a global output newline policy: CLI text and generated files end in a newline by default, with `-n` to suppress adding one. Filesystem `--in-newline` optionally removes one input line ending; the redundant filesystem `--out-newline` option was removed.
 - Changed default validation to reject unsafe names, collisions, and missing or mismatched section headings. Markdown title policies allow filename-authoritative or heading-authoritative reconstruction when needed.
 - Added end-to-end Markdown syntax tree round-trip tests and documented which options can prevent round-tripping.
 
