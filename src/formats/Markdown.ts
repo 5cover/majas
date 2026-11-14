@@ -44,7 +44,8 @@ export default class Markdown extends FormatterBase<string> {
       let sourceHeading: string | undefined = node.headingSource
       if (filesystem && title !== undefined) {
         if (content === undefined) {
-          if (this.options.title !== 'filename') throw new Error(`Missing section heading: ${title}`)
+          if (!node.children?.items.length && this.options.title !== 'filename')
+            throw new Error(`Missing section heading: ${title}`)
         } else {
           const parsed = fromMarkdown(content)
           const first = parsed.children[0]
@@ -143,6 +144,10 @@ export function serializeSection(node: IRNode, relativeHeadings: boolean): strin
       ? rebaseHeadings(node.content, heading === undefined ? 1 : 2)
       : node.content
   return [heading, content].filter((part): part is string => part !== undefined).join('\n\n')
+}
+
+export function canOmitSectionContent(node: IRNode, depth: number): boolean {
+  return depth <= 6 && node.title !== undefined && node.headingSource === renderHeading(node.title, depth, false)
 }
 
 function isHeading(node: md.Node): node is md.Heading {

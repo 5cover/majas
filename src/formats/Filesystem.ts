@@ -123,9 +123,16 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
       if (this.options.trailingNewline && !result.endsWith('\n')) result += '\n'
       return result
     }
-    const entries = (node: IRNode, index?: number, root = false, location = '.'): Map<string, FSTree> => {
+    const entries = (node: IRNode, index?: number, root = false, location = '.', depth = 0): Map<string, FSTree> => {
       const result = new Map<string, FSTree>()
-      if (node.content !== undefined || (!root && node.headingSource !== undefined))
+      const omitHeading =
+        !root &&
+        node.content === undefined &&
+        !this.allowRenaming &&
+        !this.options.header &&
+        !this.options.relativeHeadings &&
+        output.format.canOmitSectionContent?.(node, depth)
+      if (node.content !== undefined || (!root && node.headingSource !== undefined && !omitHeading))
         result.set(contentName, formatContent(node, index))
       const children = node.children?.items ?? []
       const width = String(children.length).length
@@ -171,7 +178,7 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
         result.set(
           name,
           child.children?.items.length
-            ? entries(child, i + 1, false, location === '.' ? name : `${location}/${name}`)
+            ? entries(child, i + 1, false, location === '.' ? name : `${location}/${name}`, depth + 1)
             : formatContent(child, i + 1)
         )
       })

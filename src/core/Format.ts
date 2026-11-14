@@ -16,6 +16,7 @@ export interface Format {
   accepts: string
   emits: string
   serializeSection?: (node: IRNode, relativeHeadings: boolean) => string
+  canOmitSectionContent?: (node: IRNode, depth: number) => boolean
   create(options: Readonly<Options>): Pipeline
 }
 

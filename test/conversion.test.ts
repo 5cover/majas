@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fromMarkdown } from 'mdast-util-from-markdown'
 import { emitFilesystem, emitIR, emitMarkdown, parseFilesystem, parseIR, parseMarkdown } from '../src/index.js'
-import type { IRNode } from '../src/index.js'
+import type { FSTree, IRNode } from '../src/index.js'
 import { assertEqualsIR } from './testing.js'
 
 describe('conversion API', () => {
@@ -97,6 +97,22 @@ describe('conversion API', () => {
     assert.deepEqual(Array.from((tree as Map<string, unknown>).keys()), ['1 2 Beta.md', '2 1 Alpha.md'])
     const rebuilt = emitMarkdown(parseFilesystem({ title: 'dir', children: tree }, { order: 'nums' }))
     assert.equal(rebuilt, source)
+  })
+
+  it('omits heading-only directory content when the heading is recoverable', () => {
+    const input = '# Alpha\n\n## Beta\n\ntext'
+    const tree = emitFilesystem(parseMarkdown(input))
+    assert.deepEqual(tree, new Map([['Alpha', new Map([['Beta.md', '## Beta\n\ntext']])]]))
+    assert.equal(emitMarkdown(parseFilesystem({ title: 'dir', children: tree })), input)
+  })
+
+  it('keeps a heading-only content file for skipped levels and noncanonical headings', () => {
+    for (const input of ['# Alpha\n\n### Beta\n\n#### Child', '# Alpha\n\n## Beta ##\n\n### Child']) {
+      const tree = emitFilesystem(parseMarkdown(input)) as Map<string, Map<string, FSTree>>
+      const beta = tree.get('Alpha')?.get('Beta') as Map<string, FSTree>
+      assert.ok(beta.has('content.md'))
+      assert.equal(emitMarkdown(parseFilesystem({ title: 'dir', children: tree })), input)
+    }
   })
 
   it('preserves inline heading structure when an explicit filename replacement is used', () => {

@@ -152,6 +152,7 @@ export default [
     accepts: 'markdown markup text',
     emits: 'markdown markup text',
     serializeSection: Markdown.serializeSection,
+    canOmitSectionContent: Markdown.canOmitSectionContent,
     create(options) {
       const o = parseOptions(options, optionSchemas.md)
       const mdFormatter = new Markdown.default(this, o)
