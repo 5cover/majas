@@ -28,7 +28,8 @@
     "allowJs": true,
     // Transpile our TypeScript code to JavaScript
     "module": "NodeNext",
-    "lib": ["es2022"]
+    "lib": ["es2022"],
+    "types": ["mdast"]
   },
   "exclude": ["node_modules", "dist"]
 }

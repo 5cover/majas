@@ -47,12 +47,14 @@
     "prepare": "husky",
     "test": "tsx --test --experimental-test-module-mocks",
     "lint": "eslint",
-    "build": "tsc -p tsconfig.build.json --incremental"
+    "build": "tsc -p tsconfig.build.json --incremental",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@commander-js/extra-typings": "^15.1.0",
     "@eslint/compat": "^2.1.1",
     "@types/fs-extra": "^11.0.4",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^26.6.6",
     "@types/string-template": "^1.0.7",
     "@typescript-eslint/eslint-plugin": "^8.72.2",
@@ -64,6 +66,7 @@
     "memfs": "^4.80.1",
     "prettier": "^3.10.1",
     "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2"
   },
   "engines": {

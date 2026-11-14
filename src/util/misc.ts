@@ -59,12 +59,13 @@ export function preprocessOptionsArgs(args: readonly string[]) {
   }
 }
 
+const te = new TextEncoder()
 export async function readFromStdin() {
   return new Promise((resolve, reject) => {
     const chunks: Uint8Array[] = []
 
     process.stdin.on('data', chunk => {
-      chunks.push(chunk)
+      chunks.push(typeof chunk === 'string' ? te.encode(chunk) : chunk)
     })
 
     process.stdin.on('end', () => {
