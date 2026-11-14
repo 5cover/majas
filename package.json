@@ -33,6 +33,7 @@
   "author": "Scover",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "majas": "dist/cli.js"
   },

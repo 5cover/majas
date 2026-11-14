@@ -6,6 +6,7 @@ import type IRNode from '../core/IRNode.js'
 import { type FSTree } from '../fstree.js'
 import { uniqify } from '../util/string.js'
 import { map, normalizePartial } from '../util/misc.js'
+import { rebaseHeadings, renderHeading } from './Markdown.js'
 
 export interface FSTreeNode {
   title: string
@@ -15,6 +16,8 @@ export interface FSTreeNode {
 export interface Options {
   baseDirname: string
   baseFilename: string
+  relativeHeadings: boolean
+  trailingNewline: boolean
   invalidFilenameCharReplacement?: string | ((substring: string) => string)
   /**
    * Formats file header.
@@ -35,6 +38,8 @@ export interface Options {
 export const DefaultOptions = {
   baseDirname: '.',
   baseFilename: 'out',
+  relativeHeadings: false,
+  trailingNewline: false,
   filename: title => title,
 } as const satisfies Options
 
@@ -43,6 +48,8 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
   constructor(format: Format, options?: Readonly<Partial<Options>>) {
     super(format)
     this.options = normalizePartial(DefaultOptions, options)
+    if (this.options.relativeHeadings && this.options.header)
+      throw new Error('relative headings cannot be combined with a custom header')
   }
   protected override parseImpl(input: FSTreeNode): IRNode {
     if (typeof input.children === 'string') {
@@ -77,7 +84,15 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
           `${filename ?? this.options.baseFilename}.${output.format.fileExtensions[0] ?? 'txt'}`,
           s => parent.has(s)
         )
-        parent.set(contentFilename, (this.options.header?.(node.title, index) ?? '') + node.content)
+        let content = node.content
+        if (this.options.relativeHeadings) {
+          content = rebaseHeadings(content, node.title === undefined ? 1 : 2)
+          if (node.title !== undefined) content = `${renderHeading(node.title, 1, false)}\n\n${content}`
+        } else {
+          content = (this.options.header?.(node.title, index) ?? '') + content
+        }
+        if (this.options.trailingNewline && !content.endsWith('\n')) content += '\n'
+        parent.set(contentFilename, content)
       }
       // allow empty directory when no content
       if (node.children?.items.length || node.content === undefined) {

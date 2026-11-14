@@ -107,9 +107,28 @@ XML
 
 ## Notes
 
+- Currently implemented formats are IR JSON (`ir`), Markdown (`md`), and filesystem trees (`fs`). The JSON and XML examples above describe intended future formats; `ir` accepts the IR node JSON structure.
+- Markdown output rejects untitled non-root nodes and headings deeper than level six. Use `--out-html` to render deeper headings as accessible HTML. Parsing Markdown does not recover the hierarchy of those HTML headings.
+- Filesystem-to-Markdown conversion rebases headings in file contents under the file's generated heading. A leading H1 must match the filename without a recognized Markdown extension by default. Use `--out-title filename` or `--out-title heading` to select either title instead; a missing H1 always falls back to the filename.
+- Use `--out-relative` for Markdown-to-filesystem output to give titled files an H1 and rebase their contained headings. This cannot be combined with `--out-header`. Use `--out-newline` to ensure output files end in a newline.
 - Majas is **format-agnostic**, **language-agnostic**, and sometimes even **logic-agnostic**.
 - It doesn't care what you're doing. But it _knows_ all data is a tree.
 - Be careful: using `majas` means accepting the truth of its name.
+
+## Programmatic API
+
+The in-memory API separates conversion from I/O. Filesystem trees are strings for files and `Map<string, FSTree>` for directories.
+
+```ts
+import { emitFilesystem, emitMarkdown, parseFilesystem, parseMarkdown } from 'majas'
+
+const document = parseMarkdown('# Notes\n\nHello')
+const files = emitFilesystem(document, { relativeHeadings: true, trailingNewline: true })
+const fromFiles = parseFilesystem({ title: 'docs', children: files })
+const markdown = emitMarkdown(fromFiles, { title: 'filename' })
+```
+
+`parseIR` and `emitIR` handle the JSON IR format. `emitMarkdown` also accepts `html` and `title` options; `parseMarkdown` accepts `depth`. All functions operate on values, without reading or writing files.
 
 ## Changelog
 

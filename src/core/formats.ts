@@ -52,6 +52,12 @@ const optionSchemas = {
   },
   md: {
     encoding,
+    html: { type: 'boolean', description: 'Use accessible HTML headings beyond level six.', default: false },
+    title: {
+      enum: ['match', 'filename', 'heading'],
+      description: 'Choose the filesystem filename or leading H1 as title, or require a match.',
+      default: 'match',
+    },
     depth: {
       enum: Markdown.HeadingDepths,
       description:
@@ -61,6 +67,12 @@ const optionSchemas = {
   },
   fs: {
     encoding,
+    relative: {
+      type: 'boolean',
+      description: 'Emit titled files with an H1 and rebase contained headings.',
+      default: false,
+    },
+    newline: { type: 'boolean', description: 'Ensure emitted files end with a newline.', default: false },
     basedir: {
       type: 'string',
       description: 'Base dirname to place the root node children in. May be a path.',
@@ -141,13 +153,15 @@ export default [
       const fsFormatter = new Filesystem.default(this, {
         baseDirname: o.basedir,
         baseFilename: o.basefile,
+        relativeHeadings: o.relative,
+        trailingNewline: o.newline,
         invalidFilenameCharReplacement: o.replace,
         header: map(fmt => (title, index) => squrlyFormat(fmt, { title, index, n: EOL }), o.header),
         filename: map(fmt => (title, index) => squrlyFormat(fmt, { title, index, n: EOL }), o.filename),
       })
       return {
         parse(input) {
-          const title = decodeRawInput(input, o.encoding, x => x)
+          const title = decodeRawInput(input, o.encoding, (_, input) => input)
           return fsFormatter.parse({
             title,
             children: fstree.read(title, o.encoding),

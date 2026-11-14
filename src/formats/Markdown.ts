@@ -10,17 +10,21 @@ export const HeadingDepths = [1, 2, 3, 4, 5, 6] as const satisfies md.Heading['d
 
 export interface Options {
   depth: md.Heading['depth']
+  html?: boolean
+  title?: 'match' | 'filename' | 'heading'
 }
 
 export const DefaultOptions = {
   depth: 6,
+  html: false,
+  title: 'match',
 } as const satisfies Options
 
 export default class Markdown extends FormatterBase<string> {
-  private readonly options: Readonly<Options>
+  private readonly options: Readonly<Required<Options>>
   constructor(format: Format, options?: Partial<Readonly<Options>>) {
     super(format)
-    this.options = normalizePartial<Options>(DefaultOptions, options)
+    this.options = normalizePartial<Required<Options>>(DefaultOptions, options)
   }
   private input!: string
   protected override parseImpl(input: string): IRNode {
@@ -28,8 +32,36 @@ export default class Markdown extends FormatterBase<string> {
     const root = fromMarkdown(input)
     return this.md2ir(root)
   }
-  override emit(_output: Document): string {
-    return 'todo'
+  override emit(output: Document): string {
+    const sections: string[] = []
+    const filesystem = output.format.displayName === 'Filesystem'
+    const walk = (node: IRNode, depth: number, root: boolean) => {
+      let title = node.title
+      let content = node.content
+      if (filesystem && title !== undefined) title = title.replace(/^.*[\\/]/, '')
+      if (filesystem && content !== undefined && title !== undefined) {
+        title = title.replace(/\.(?:md|markdown|mdown|mkdn|mkd|mdwn|mkdown|ron)$/i, '')
+        const parsed = fromMarkdown(content)
+        const first = parsed.children[0]
+        if (first && isHeading(first) && first.depth === 1) {
+          const heading = headingTitle(content, first)
+          if (this.options.title === 'match' && heading !== title)
+            throw new Error(`File title does not match its H1: ${title} / ${heading}`)
+          if (this.options.title === 'heading') title = heading
+          content = content
+            .slice(first.position?.end.offset ?? throwf(new Error('missing heading end offset')))
+            .trimStart()
+        }
+        content = rebaseHeadings(content, depth + 1, this.options.html)
+      }
+      if (title !== undefined) sections.push(renderHeading(title, depth, this.options.html))
+      else if (!root) throw new Error('Cannot emit an untitled non-root node as Markdown')
+      if (content) sections.push(content)
+      const childDepth = title === undefined ? depth : depth + 1
+      node.children?.items.forEach(child => walk(child, childDepth, false))
+    }
+    walk(output.root, 1, true)
+    return sections.join('\n\n')
   }
 
   private md2ir(parent: md.Parent): IRNode {
@@ -83,4 +115,37 @@ export default class Markdown extends FormatterBase<string> {
 
 function isHeading(node: md.Node): node is md.Heading {
   return node.type === 'heading'
+}
+
+function headingTitle(input: string, heading: md.Heading): string {
+  const first = heading.children[0]
+  const last = heading.children[heading.children.length - 1]
+  return first && last ? input.slice(first.position?.start.offset, last.position?.end.offset) : ''
+}
+
+export function renderHeading(title: string, depth: number, html: boolean): string {
+  if (depth <= 6) return `${'#'.repeat(depth)} ${title}`
+  if (!html) throw new Error(`Markdown heading depth ${depth} exceeds six; enable HTML headings`)
+  const escaped = title
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+  return `<div role="heading" aria-level="${depth}">${escaped}</div>`
+}
+
+export function rebaseHeadings(input: string, firstDepth: number, html = false): string {
+  const headings = fromMarkdown(input).children.filter(isHeading)
+  if (!headings.length) return input
+  const base = Math.min(...headings.map(heading => heading.depth))
+  let result = input
+  for (const heading of headings.reverse()) {
+    const start = heading.position?.start.offset ?? throwf(new Error('missing heading start offset'))
+    const end = heading.position?.end.offset ?? throwf(new Error('missing heading end offset'))
+    result =
+      result.slice(0, start) +
+      renderHeading(headingTitle(input, heading), heading.depth - base + firstDepth, html) +
+      result.slice(end)
+  }
+  return result
 }
