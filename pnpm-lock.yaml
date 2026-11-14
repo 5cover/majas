@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@commander-js/extra-typings':
+        specifier: ^15.1.0
+        version: 15.1.0(commander@15.1.0)
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -27,9 +30,6 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
     devDependencies:
-      '@commander-js/extra-typings':
-        specifier: ^15.1.0
-        version: 15.1.0(commander@15.1.0)
       '@eslint/compat':
         specifier: ^2.1.1
         version: 2.1.1(eslint@10.15.0(supports-color@7.2.0))

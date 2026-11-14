@@ -113,11 +113,7 @@ XML
 
 ## Changelog
 
-### 1.1.3
-
-- It did not build.
-
-### 1.1.2
+### 1.1.5
 
 - Fixed @commander-js/extra-typings incorrectly being a devDependency
 
