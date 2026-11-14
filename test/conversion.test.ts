@@ -89,6 +89,28 @@ describe('conversion API', () => {
     }
   })
 
+  it('reverses the output newline option without changing internal Markdown newlines', () => {
+    const source = 'Intro\n\n# Alpha\n\nFirst\n\n```\nline\n\nline\n```\n\n# Beta\n\nSecond'
+    const dir = mkdtempSync(join(tmpdir(), 'majas-newline-'))
+    try {
+      const split = spawnSync(
+        process.execPath,
+        ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-2', 'fs', '-o', dir, '-onewline'],
+        { input: source, encoding: 'utf8' }
+      )
+      assert.equal(split.status, 0, split.stderr)
+      const merge = spawnSync(
+        process.execPath,
+        ['--import', 'tsx', 'src/cli.ts', '-4', 'fs', '-2', 'md', dir, '-inewline'],
+        { encoding: 'utf8' }
+      )
+      assert.equal(merge.status, 0, merge.stderr)
+      assert.equal(merge.stdout, source)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('round-trips unsorted and already-numbered headings with matching order options', () => {
     const source = '# 2 Beta\n\nSecond\n\n# 1 Alpha\n\nFirst'
     const document = parseMarkdown(source)

@@ -72,7 +72,9 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
     const stripHeader = (content: string, title?: string, index?: number): string => {
       const header = this.options.header?.(title, index) ?? ''
       if (!content.startsWith(header)) throw new Error(`Missing configured header for ${title ?? 'root'}`)
-      return content.slice(header.length)
+      const body = content.slice(header.length)
+      if (!this.options.trailingNewline || !body.endsWith('\n')) return body
+      return body.slice(0, body.endsWith('\r\n') ? -2 : -1)
     }
     const walk = (tree: FSTree, title?: string, index?: number): IRNode => {
       if (typeof tree === 'string') return { title, content: stripHeader(tree, title, index) }

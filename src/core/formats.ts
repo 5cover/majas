@@ -91,7 +91,8 @@ const optionSchemas = {
     },
     newline: {
       type: 'boolean',
-      description: 'Ensure emitted files end with a newline (may change content).',
+      description:
+        'Ensure output files end with a newline; remove one trailing line ending on input (may change content).',
       default: false,
     },
     basedir: {

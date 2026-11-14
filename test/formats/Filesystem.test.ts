@@ -127,7 +127,27 @@ describe('Filesystem formatter', () => {
     const options = { header: (title: string | undefined) => `${title}:`, trailingNewline: true }
     const tree = emitFilesystem(document, options)
     assert.deepEqual(tree, new Map([['A.txt', 'A:a\n']]))
-    assert.equal(parseFilesystem({ title: 'dir', children: tree }, options).root.children?.items[0].content, 'a\n')
+    assert.equal(parseFilesystem({ title: 'dir', children: tree }, options).root.children?.items[0].content, 'a')
+  })
+
+  it('removes only one trailing line ending when enabled', () => {
+    const tree = new Map([
+      ['A.txt', 'first\n\nsecond\n\n'],
+      ['B.txt', 'windows\r\n'],
+      ['C.txt', 'no newline'],
+    ])
+    const input = { title: 'dir', children: tree }
+    assert.deepEqual(
+      parseFilesystem(input, { trailingNewline: true }).root.children?.items.map(node => node.content),
+      ['first\n\nsecond\n', 'windows', 'no newline']
+    )
+    assert.equal(parseFilesystem(input).root.children?.items[0].content, 'first\n\nsecond\n\n')
+  })
+
+  it('does not remove a line ending belonging to the configured header', () => {
+    const input = { title: 'dir', children: new Map([['A.txt', 'header\n']]) }
+    const options = { trailingNewline: true, header: () => 'header\n' }
+    assert.equal(parseFilesystem(input, options).root.children?.items[0].content, '')
   })
 
   it('rejects a missing configured header', () => {
