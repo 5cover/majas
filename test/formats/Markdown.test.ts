@@ -273,13 +273,9 @@ h6 content`;
 
         for (const i of HeadingDepths) {
             const doc = markdown({ depth: i }).parse(input);
-            assertEqualsIR(
-                doc.root,
-                {
-                    children: children(node(i)),
-                },
-                true
-            );
+            assertEqualsIR(doc.root, {
+                children: children(node(i)),
+            });
         }
 
         function node(max: Options['depth'], i = 1): IRNode {

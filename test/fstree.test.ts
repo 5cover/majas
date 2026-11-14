@@ -1,4 +1,4 @@
-// This import must come before other so the mock is applied
+// This import must come before others so the mock is applied
 import { fs, volume } from './testfs.js';
 
 import { describe, it } from 'node:test';

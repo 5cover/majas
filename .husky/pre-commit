@@ -3,5 +3,5 @@ set -e
 if [ "$(git symbolic-ref --short HEAD)" = wip ] ; then
     echo "WIP branch: skipping tests."
 else
-    npm test
+    pnpm test
 fi
