@@ -113,7 +113,7 @@ XML
 
 ## Changelog
 
-### 1.1.5
+### 1.1.4
 
 - Fixed @commander-js/extra-typings incorrectly being a devDependency
 
