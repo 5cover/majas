@@ -1,16 +1,17 @@
 import fs from 'fs-extra'
 import p from 'path'
+import { ensureTrailingNewline } from './util/string.js'
 
 export type FSTree = string | Map<string, FSTree>
 
-export function write(tree: FSTree, path: string) {
+export function write(tree: FSTree, path: string, trailingNewline = false) {
   if (typeof tree === 'string') {
-    fs.writeFileSync(path, tree)
+    fs.writeFileSync(path, trailingNewline ? ensureTrailingNewline(tree) : tree)
     return
   }
   fs.ensureDirSync(path)
   for (const [name, child] of tree) {
-    write(child, p.resolve(path, name))
+    write(child, p.resolve(path, name), trailingNewline)
   }
 }
 

@@ -4,6 +4,10 @@
  * @param inCrowd Population of strings that must not include the modified individual
  * @returns The individual or it modified as little as possible to be unique from crowd in an implementation-defined manner.
  */
+export function ensureTrailingNewline(value: string): string {
+  return value.endsWith('\n') ? value : value + '\n'
+}
+
 export function uniqify(individual: string, inCrowd: (candidate: string) => boolean) {
   let n = 1
   let modividual = individual

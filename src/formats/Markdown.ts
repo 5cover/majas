@@ -73,7 +73,10 @@ export default class Markdown extends FormatterBase<string> {
       node.children?.items.forEach(child => walk(child, childDepth, false))
     }
     walk(output.root, 1, true)
-    return sections.join('\n\n')
+    return sections.reduce((output, section) => {
+      if (!output) return section
+      return output + (/(?:\r?\n){2}$/.test(output) ? '' : output.endsWith('\n') ? '\n' : '\n\n') + section
+    }, '')
   }
 
   private md2ir(parent: md.Parent): IRNode {

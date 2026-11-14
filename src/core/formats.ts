@@ -4,13 +4,14 @@ import * as Markdown from '../formats/Markdown.js'
 import { type Format, type OptionsSchema } from './Format.js'
 import { Ajv, type Schema } from 'ajv'
 import { wrapValidatorAsTypeGuard } from 'json-schema-to-ts'
-import { decodeRawInput, type Raw } from './Formatter.js'
+import { decodeRawInput } from './Formatter.js'
 import * as fstree from '../fstree.js'
 import { stdout } from 'process'
 import { createWriteStream } from 'fs'
 import squrlyFormat from 'squrly-format'
 import { map } from '../util/misc.js'
 import { EOL } from 'os'
+import { ensureTrailingNewline } from '../util/string.js'
 
 const ajv = new Ajv({
   useDefaults: true,
@@ -92,7 +93,7 @@ const optionSchemas = {
     newline: {
       type: 'boolean',
       description:
-        'Ensure output files end with a newline; remove one trailing line ending on input (may change content).',
+        'Remove one trailing line ending from input files (may change content). Output uses the global newline setting.',
       default: false,
     },
     basedir: {
@@ -139,8 +140,8 @@ export default [
         parse(input) {
           return irFormatter.parse(decodeRawInput(input, o.encoding))
         },
-        emit(output, location) {
-          textEmit(location, irFormatter.emit(output))
+        emit(output, location, trailingNewline = true) {
+          textEmit(location, irFormatter.emit(output), trailingNewline)
         },
       }
     },
@@ -161,8 +162,8 @@ export default [
         parse(input) {
           return mdFormatter.parse(decodeRawInput(input, o.encoding))
         },
-        emit(output, location) {
-          textEmit(location, mdFormatter.emit(output))
+        emit(output, location, trailingNewline = true) {
+          textEmit(location, mdFormatter.emit(output), trailingNewline)
         },
       }
     },
@@ -195,17 +196,17 @@ export default [
             children: fstree.read(title, o.encoding),
           })
         },
-        emit(output, location) {
-          fstree.write(fsFormatter.emit(output), location ?? '.')
+        emit(output, location, trailingNewline = true) {
+          fstree.write(fsFormatter.emit(output, false), location ?? '.', trailingNewline)
         },
       }
     },
   },
 ] as const satisfies Format[]
 
-function textEmit(location: string | undefined, output: Raw) {
+function textEmit(location: string | undefined, output: string, trailingNewline: boolean) {
   const f = location === undefined ? stdout : createWriteStream(location)
-  f.write(output)
+  f.write(trailingNewline ? ensureTrailingNewline(output) : output)
 }
 
 function parseOptions<Schema extends OptionsSchema>(options: unknown, schema: Schema) {

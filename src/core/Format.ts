@@ -22,5 +22,5 @@ export interface Format {
 
 interface Pipeline {
   parse(input: Raw): Document
-  emit(output: Document, location: string | undefined): void
+  emit(output: Document, location: string | undefined, trailingNewline?: boolean): void
 }

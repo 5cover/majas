@@ -116,13 +116,13 @@ export default class Filesystem extends FormatterBase<FSTreeNode, FSTree> {
     return walk(input.children)
   }
 
-  override emit(output: Document): FSTree {
+  override emit(output: Document, trailingNewline = this.options.trailingNewline): FSTree {
     const extension = output.format.fileExtensions[0] ?? 'txt'
     const contentName = this.options.contentFilename ?? `${this.options.baseFilename}.${extension}`
     const formatContent = (node: IRNode, index?: number): string => {
       const content = output.format.serializeSection?.(node, this.options.relativeHeadings) ?? node.content ?? ''
       let result = (this.options.header?.(node.title, index) ?? '') + content
-      if (this.options.trailingNewline && !result.endsWith('\n')) result += '\n'
+      if (trailingNewline && !result.endsWith('\n')) result += '\n'
       return result
     }
     const entries = (node: IRNode, index?: number, root = false, location = '.', depth = 0): Map<string, FSTree> => {

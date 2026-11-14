@@ -36,6 +36,9 @@ export function preprocessOptionsArgs(args: readonly string[]) {
         detectPrefix(arg, output, '--out-'))
     ) {
       /* empty */
+    } else if (arg === '-n' || arg === '--no-newline') {
+      option.key = undefined
+      newArgs.push(arg)
     } else if (option.key !== undefined) {
       const argNumber = parseFloat(arg)
       option.bag[option.key] = isNaN(argNumber) ? arg : argNumber

@@ -19,12 +19,13 @@ describe('conversion API', () => {
         encoding: 'utf8',
       })
       assert.equal(split.status, 0, split.stderr)
-      assert.equal(readFileSync(join(dir, 'content.md'), 'utf8'), 'Introduction.')
-      assert.equal(readFileSync(join(dir, 'Alpha', 'content.md'), 'utf8'), '# Alpha\n\nFirst.')
+      assert.equal(readFileSync(join(dir, 'content.md'), 'utf8'), 'Introduction.\n')
+      assert.equal(readFileSync(join(dir, 'Alpha', 'content.md'), 'utf8'), '# Alpha\n\nFirst.\n')
       const merge = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'fs', '-2', 'md', dir], {
         encoding: 'utf8',
       })
       assert.equal(merge.status, 0, merge.stderr)
+      assert.equal(merge.stdout, source + '\n')
       const ast = (input: string) =>
         JSON.parse(
           JSON.stringify(fromMarkdown(input), (key, value: unknown) => (key === 'position' ? undefined : value))
@@ -61,7 +62,7 @@ describe('conversion API', () => {
         { input: source, encoding: 'utf8' }
       )
       assert.equal(split.status, 0, split.stderr)
-      assert.equal(readFileSync(join(dir, 'root.md'), 'utf8'), 'PREFIX\nIntro')
+      assert.equal(readFileSync(join(dir, 'root.md'), 'utf8'), 'PREFIX\nIntro\n')
       const merge = spawnSync(
         process.execPath,
         [
@@ -83,29 +84,33 @@ describe('conversion API', () => {
         { encoding: 'utf8' }
       )
       assert.equal(merge.status, 0, merge.stderr)
-      assert.equal(merge.stdout, source)
+      assert.equal(merge.stdout, source + '\n')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
   })
 
-  it('reverses the output newline option without changing internal Markdown newlines', () => {
+  it('handles an optional input newline removal without changing internal Markdown newlines', () => {
     const source = 'Intro\n\n# Alpha\n\nFirst\n\n```\nline\n\nline\n```\n\n# Beta\n\nSecond'
     const dir = mkdtempSync(join(tmpdir(), 'majas-newline-'))
     try {
-      const split = spawnSync(
-        process.execPath,
-        ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-2', 'fs', '-o', dir, '-onewline'],
-        { input: source, encoding: 'utf8' }
-      )
+      const split = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-2', 'fs', '-o', dir], {
+        input: source,
+        encoding: 'utf8',
+      })
       assert.equal(split.status, 0, split.stderr)
+      const defaultMerge = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'fs', '-2', 'md', dir], {
+        encoding: 'utf8',
+      })
+      assert.equal(defaultMerge.status, 0, defaultMerge.stderr)
+      assert.equal(defaultMerge.stdout, source + '\n')
       const merge = spawnSync(
         process.execPath,
         ['--import', 'tsx', 'src/cli.ts', '-4', 'fs', '-2', 'md', dir, '-inewline'],
         { encoding: 'utf8' }
       )
       assert.equal(merge.status, 0, merge.stderr)
-      assert.equal(merge.stdout, source)
+      assert.equal(merge.stdout, source + '\n')
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -177,7 +182,64 @@ describe('conversion API', () => {
       encoding: 'utf8',
     })
     assert.equal(result.status, 0, result.stderr)
-    assert.equal(result.stdout, '# Hello\n\nworld')
+    assert.equal(result.stdout, '# Hello\n\nworld\n')
+  })
+
+  it('adds one final newline to CLI text output unless disabled', () => {
+    const input = JSON.stringify({ content: 'hello\n' })
+    const run = (args: string[]) =>
+      spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'ir', ...args], { input, encoding: 'utf8' })
+    const markdown = run(['-2', 'md'])
+    assert.equal(markdown.status, 0, markdown.stderr)
+    assert.equal(markdown.stdout, 'hello\n')
+    const noNewline = run(['-2', 'md', '-n'])
+    assert.equal(noNewline.status, 0, noNewline.stderr)
+    assert.equal(noNewline.stdout, 'hello\n')
+    const json = run(['-2', 'ir'])
+    assert.equal(json.status, 0, json.stderr)
+    assert.equal(json.stdout, input + '\n')
+    const jsonWithoutNewline = run(['-2', 'ir', '--no-newline'])
+    assert.equal(jsonWithoutNewline.status, 0, jsonWithoutNewline.stderr)
+    assert.equal(jsonWithoutNewline.stdout, input)
+  })
+
+  it('suppresses added filesystem newlines with -n', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'majas-no-newline-'))
+    try {
+      const split = spawnSync(
+        process.execPath,
+        ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-2', 'fs', '-o', dir, '-n'],
+        { input: '# A\n\nbody', encoding: 'utf8' }
+      )
+      assert.equal(split.status, 0, split.stderr)
+      assert.equal(readFileSync(join(dir, 'A.md'), 'utf8'), '# A\n\nbody')
+      const merge = spawnSync(
+        process.execPath,
+        ['--import', 'tsx', 'src/cli.ts', '-4', 'fs', '-2', 'md', dir, '-inewline', '-n'],
+        { encoding: 'utf8' }
+      )
+      assert.equal(merge.status, 0, merge.stderr)
+      assert.equal(merge.stdout, '# A\n\nbody')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects the obsolete filesystem output newline flag', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-2', 'fs', '-onewline'], {
+      input: '# A',
+      encoding: 'utf8',
+    })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /use -n/)
+  })
+
+  it('honors -n when reporting a format without converting', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '-4', 'md', '-n'], {
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(result.stdout, 'Markdown')
   })
   it('emits and parses a Markdown hierarchy', () => {
     const document = parseMarkdown('Intro\n\n# Parent\n\ntext\n\n## Child\n\nmore\n\n# Sibling')

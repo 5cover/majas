@@ -16,6 +16,7 @@ const program = baseProgram
     'Target format. If absent, Majas simply outputs the resolved input format and no conversion is performed.'
   )
   .option('-o, --out <file>', 'Output file')
+  .option('-n, --no-newline', 'Do not add a trailing newline to output')
   .option('-i, --infer', 'Infer input format from file extension; treat `--from` as a fallback on ambiguous input')
   .option('--help [format]', 'Get general help or help for a specific format')
   .helpOption(false)
@@ -56,11 +57,14 @@ const sourceFormat = ((): Format => {
 })()
 
 if (o.to === undefined) {
-  console.log(sourceFormat.displayName)
+  process.stdout.write(sourceFormat.displayName + (o.newline ? '\n' : ''))
 } else {
   const outFormat = findFormat(o.to) ?? program.error(invalidFormatMsg(o.to))
+  if (outFormat.displayName === 'Filesystem' && formatOptions.output.newline !== undefined) {
+    program.error('Filesystem output always adds a trailing newline by default; use -n to suppress it')
+  }
   const ir = sourceFormat.create(formatOptions.input).parse(program.args[0] ?? (await readFromStdin()))
-  outFormat.create(formatOptions.output).emit(ir, o.out)
+  outFormat.create(formatOptions.output).emit(ir, o.out, o.newline)
 }
 
 function formatsHelp() {
