@@ -108,7 +108,7 @@ XML
 ## Notes
 
 - Currently implemented formats are IR JSON (`ir`), Markdown (`md`), and filesystem trees (`fs`). The JSON and XML examples above describe intended future formats; `ir` accepts the IR node JSON structure.
-- Markdown output rejects untitled non-root nodes and headings deeper than level six. Use `--out-html` to render deeper headings as accessible HTML. Parsing Markdown does not recover the hierarchy of those HTML headings.
+- Markdown output rejects untitled non-root nodes and headings deeper than level six. Use `--out-html` to render deeper headings as accessible HTML; use `--in-html` to parse the exact generated HTML heading form back into the hierarchy. HTML heading parsing is disabled by default and is also disabled when `--in-depth` is less than six.
 - Filesystem-to-Markdown conversion rebases headings in file contents under the file's generated heading. A leading H1 must match the filename without a recognized Markdown extension by default. Use `--out-title filename` or `--out-title heading` to select either title instead; a missing H1 always falls back to the filename.
 - Use `--out-relative` for Markdown-to-filesystem output to give titled files an H1 and rebase their contained headings. This cannot be combined with `--out-header`. Use `--out-newline` to ensure output files end in a newline.
 - Majas is **format-agnostic**, **language-agnostic**, and sometimes even **logic-agnostic**.
@@ -128,7 +128,7 @@ const fromFiles = parseFilesystem({ title: 'docs', children: files })
 const markdown = emitMarkdown(fromFiles, { title: 'filename' })
 ```
 
-`parseIR` and `emitIR` handle the JSON IR format. `emitMarkdown` also accepts `html` and `title` options; `parseMarkdown` accepts `depth`. All functions operate on values, without reading or writing files.
+`parseIR` and `emitIR` handle the JSON IR format. `emitMarkdown` accepts `html` and `title` options; `parseMarkdown` accepts `depth` and `html`. All functions operate on values, without reading or writing files.
 
 ## Changelog
 

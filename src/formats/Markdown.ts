@@ -2,6 +2,8 @@ import type * as md from 'mdast'
 import type IRNode from '../core/IRNode.js'
 import type Document from '../core/Document.js'
 import { fromMarkdown } from 'mdast-util-from-markdown'
+import { decodeNamedCharacterReference } from 'decode-named-character-reference'
+import { decodeNumericCharacterReference } from 'micromark-util-decode-numeric-character-reference'
 import { normalizePartial, throwf } from '../util/misc.js'
 import { FormatterBase } from '../core/Formatter.js'
 import type { Format } from '../core/Format.js'
@@ -70,27 +72,34 @@ export default class Markdown extends FormatterBase<string> {
     const h0: IRNode = {
       children: { ordered: true, items: h0children },
     }
-    const stack: (readonly [md.Heading['depth'] | 0, IRNode[]])[] = [[0, h0children]]
+    const stack: (readonly [number, IRNode[]])[] = [[0, h0children]]
     let lastHeading = h0
     let previousHeadingEndOffset = 0
     for (const n of parent.children) {
-      if (!isHeading(n) || n.depth > this.options.depth) continue
+      const heading = isHeading(n)
+        ? n.depth <= this.options.depth
+          ? { depth: n.depth, title: this.getSource(n.children) }
+          : undefined
+        : this.options.html && this.options.depth === 6 && n.type === 'html'
+          ? parseHtmlHeading(n.value)
+          : undefined
+      if (!heading) continue
       const content = this.input
         .substring(previousHeadingEndOffset, n.position?.start.offset ?? throwf(new Error('missing node start offset')))
         .trim()
       if (content) lastHeading.content = content
-      while (stack[stack.length - 1][0] >= n.depth) {
+      while (stack[stack.length - 1][0] >= heading.depth) {
         stack.pop()
       }
       const newScope: IRNode[] = []
       stack[stack.length - 1][1].push(
         (lastHeading = {
           // Get raw child source
-          title: this.getSource(n.children),
+          title: heading.title,
           children: { ordered: true, items: newScope },
         })
       )
-      stack.push([n.depth, newScope])
+      stack.push([heading.depth, newScope])
       previousHeadingEndOffset = n.position?.end.offset ?? throwf(new Error('missing node end offset'))
     }
 
@@ -123,6 +132,22 @@ function headingTitle(input: string, heading: md.Heading): string {
   return first && last ? input.slice(first.position?.start.offset, last.position?.end.offset) : ''
 }
 
+function parseHtmlHeading(value: string): { depth: number; title: string } | undefined {
+  const match =
+    /^<div role="heading" aria-level="([1-9]\d*)">((?:[^<>&"\r\n]|&(?:amp|lt|gt|quot|NewLine|#13);)*)<\/div>$/.exec(
+      value
+    )
+  if (!match) return undefined
+  const depth = Number(match[1])
+  if (!Number.isSafeInteger(depth) || depth <= 6) return undefined
+  const title = match[2].replace(/&(amp|lt|gt|quot|NewLine|#13);/g, (_, name: string) =>
+    name === '#13'
+      ? decodeNumericCharacterReference('13', 10)
+      : decodeNamedCharacterReference(name) || throwf(new Error('invalid character reference'))
+  )
+  return { depth, title }
+}
+
 export function renderHeading(title: string, depth: number, html: boolean): string {
   if (depth <= 6) return `${'#'.repeat(depth)} ${title}`
   if (!html) throw new Error(`Markdown heading depth ${depth} exceeds six; enable HTML headings`)
@@ -131,6 +156,8 @@ export function renderHeading(title: string, depth: number, html: boolean): stri
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
+    .replaceAll('\n', '&NewLine;')
+    .replaceAll('\r', '&#13;')
   return `<div role="heading" aria-level="${depth}">${escaped}</div>`
 }
 

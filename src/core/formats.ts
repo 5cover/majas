@@ -52,7 +52,11 @@ const optionSchemas = {
   },
   md: {
     encoding,
-    html: { type: 'boolean', description: 'Use accessible HTML headings beyond level six.', default: false },
+    html: {
+      type: 'boolean',
+      description: 'Parse or emit generated accessible HTML headings beyond level six.',
+      default: false,
+    },
     title: {
       enum: ['match', 'filename', 'heading'],
       description: 'Choose the filesystem filename or leading H1 as title, or require a match.',
